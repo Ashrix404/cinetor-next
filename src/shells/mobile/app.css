@@ -595,3 +595,9 @@ a{color:inherit}
 .lvl{position:absolute;left:50%;top:18%;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:rgba(0,0,0,.6);color:#fff;font-size:14px;pointer-events:none}
 .dim{position:absolute;inset:0;z-index:1;background:#000;pointer-events:none}
 .rotate{position:absolute;inset:0;z-index:9;display:grid;place-items:center;background:rgba(0,0,0,.85);color:#fff;text-align:center;padding:24px}
+/* muted YouTube trailer inside the Info thumbnail: no controls, no bar, no mute button */
+.ytr{position:absolute;inset:0;overflow:hidden;pointer-events:none;opacity:0;transition:opacity .8s}
+.ytr.on{opacity:1}
+.ytr iframe{position:absolute;left:50%;top:50%;width:177.78%;height:100%;min-width:100%;min-height:56.25vw;transform:translate(-50%,-50%) scale(1.15);border:0}
+
+.panelc .pn{position:absolute;right:8px;bottom:6px;font-size:11px;color:#555;font-weight:700;font-family:Roboto}
