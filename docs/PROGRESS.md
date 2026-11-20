@@ -9,7 +9,7 @@
 | T01 tooling | done 2026-11-20 | PR #3 | green | tooling, 3 shells, CI, bootstrap |
 | T02 android-scaffold | done 2026-11-20 | PR #4 | green | 10 APKs, codes 10-14 |
 | T03 keystore | done | — | — | generated locally with openssl (PKCS12), not in CI |
-| T04 mock-media | todo | | | Mock media |
+| T04 mock-media | done 2026-11-20 | PR #5 | green | clips + music + 16 VTT on Pages |
 | T05 core-base | todo | | | config, platform, store, router |
 | T06 tmdb-client | todo | | | TMDB client |
 | T07 catalog-feeds | todo | | | Catalog feeds |
@@ -88,6 +88,14 @@
 - `android-assets.sh` also copies `capacitor.config.json`/`capacitor.plugins.json` into the tv flavor assets.
 - Added `android:hardwareAccelerated="true"` to the main manifest (perf rule 15).
 - Acceptance: [x] 5 phone + 5 TV APKs (run 44712267459). [x] TV badging has leanback launcher + touchscreen not required. [x] `data-shell` tv/mobile checked per APK.
+
+### T04 mock-media — done 2026-11-20 (Claude Code)
+- `mock-media.yml` runs on push to `main` (paths `media/**`) and on dispatch; run after merge of PR #5 published to `gh-pages/media/`.
+- VTT files: 15 cues each over 120 s with the prototype `LANGS` sample line (header line `Language: <code>`).
+- Acceptance: [x] `curl -sI …/media/clip-720p.mp4` → `HTTP/2 200`, `accept-ranges: bytes`, `access-control-allow-origin: *`, 16,997,210 bytes. [x] `media/index.json` lists 24 files with bytes + sha256.
+
+### T05 core-base — 2026-11-20 (Claude Code)
+- `config.ts` (env constants), `platform.ts` (`isNative` via `globalThis.Capacitor` so the TV bundle does not import `@capacitor/core`), `store.ts`, `router.ts` (+ `createExitGuard` for "Press back again to exit").
 
 ## Releases
 
