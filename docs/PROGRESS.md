@@ -10,12 +10,12 @@
 | T02 android-scaffold | done 2026-11-20 | PR #4 | green | 10 APKs, codes 10-14 |
 | T03 keystore | done | — | — | generated locally with openssl (PKCS12), not in CI |
 | T04 mock-media | done 2026-11-20 | PR #5 | green | clips + music + 16 VTT on Pages |
-| T05 core-base | todo | | | config, platform, store, router |
-| T06 tmdb-client | todo | | | TMDB client |
-| T07 catalog-feeds | todo | | | Catalog feeds |
-| T08 library-store | todo | | | Library, progress, series settings, PIN |
-| T09 player-model | todo | | | Player model and subtitles |
-| T10 mock-sections | todo | | | Mock section data |
+| T05 core-base | done 2026-11-20 | PR #6 | green | unit tested |
+| T06 tmdb-client | done 2026-11-20 | PR #7 | green | unit tested |
+| T07 catalog-feeds | done 2026-11-20 | PR #8 | green | unit tested |
+| T08 library-store | done 2026-11-20 | PR #9 | green | unit tested |
+| T09 player-model | done 2026-11-20 | PR #10 | green | unit tested |
+| T10 mock-sections | done 2026-11-20 | PR #11 | green | counts = prototype |
 | T11 mobile-frame | todo | | | App frame (mobile) |
 | T12 mobile-feed-blocks | todo | | | Feed building blocks (mobile) |
 | T13 mobile-sections | todo | | | Sections (mobile) |
@@ -96,6 +96,13 @@
 
 ### T05 core-base — 2026-11-20 (Claude Code)
 - `config.ts` (env constants), `platform.ts` (`isNative` via `globalThis.Capacitor` so the TV bundle does not import `@capacitor/core`), `store.ts`, `router.ts` (+ `createExitGuard` for "Press back again to exit").
+
+### T05–T10 core — done 2026-11-20 (Claude Code)
+- T05: see above. T06: `tmdb.ts` (`configureTmdb` lets TV switch to localStorage + 30 min TTL; stale cache is returned on network/HTTP errors so feeds still paint offline). Contract test ran against the real API in CI and passed (all fields we read exist).
+- T07: `catalog.ts` — `Feed` also carries `pool` (needed by `byGenre`). Genre ids map to prototype names through `GNORM`; `pickGenre` = prototype `genPick` (real matches when ≥ 4, else stable spread). `light` option = 1 page per source (TV: Home uses 3 list endpoints + 2 genre lists).
+- T08: `library.ts`, `series-settings.ts` (keyed by series; accepts `Show|s|e` keys), `pin.ts` (`pinHash` identical to prototype, plus the keypad flow `pinPress` = prototype `pinDone`).
+- T09: `player-model.ts` (reducers, `next`/`prev` cross seasons; real season sizes when known), `subtitles.ts` (`parseVtt`, `subtitleCss` = prototype `subCss`, `simulateGeneration` — labelled SIMULATED, loads hosted VTT, falls back to the bundled sample line).
+- T10: `sports.ts` (counts verified: All 18, Basketball 4, Cricket 9, Motorsports 2, WWE 2, Football 1, Upcoming 4), `live.ts`, `music.ts`.
 
 ## Releases
 
