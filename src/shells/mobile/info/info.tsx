@@ -12,6 +12,7 @@ import { ctl, onPlayerTap, pl, showCtl, startAt, toPip } from '../player/store';
 import { useStore as useStoreC } from '../ui/hooks';
 import { Vcore } from '../player/controls';
 import { createGestures } from '../player/gestures';
+import { controlsHidden } from '../../../core/player-gesture';
 import { PlayerSheet } from '../player/sheets';
 import { DlBtn, DlSheet, openDl, openDlAll, allDone } from '../dl/sheet';
 
@@ -67,9 +68,10 @@ function InlinePlayer() {
       },
     }),
   ).current;
-  const hasEmbed = !!pl.get().embedUrl;
+  const hasEmbed = !!useStoreC(pl).embedUrl;
+  // Embed servers get the touches themselves (touch-action auto, no tap handler); the bar never hides.
   return (
-    <div class={'ivp' + (c.hidden ? ' ctlhide' : '')} ref={ref} style={`--h:${pl.get().hue};touch-action:${hasEmbed ? 'auto' : 'none'}`} onClick={hasEmbed ? undefined : (e) => !gs.suppressed() && onPlayerTap(e)} onPointerDown={gs.down} onPointerMove={gs.move} onPointerUp={gs.up} onPointerCancel={gs.up}>
+    <div class={'ivp' + (controlsHidden(c.hidden, hasEmbed) ? ' ctlhide' : '')} ref={ref} style={`--h:${pl.get().hue};touch-action:${hasEmbed ? 'auto' : 'none'}`} onClick={hasEmbed ? undefined : (e) => !gs.suppressed() && onPlayerTap(e)} onPointerDown={gs.down} onPointerMove={gs.move} onPointerUp={gs.up} onPointerCancel={gs.cancel} onContextMenu={gs.menu}>
       <Vcore land={false} onFs={fs} />
     </div>
   );

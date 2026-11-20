@@ -125,6 +125,13 @@
 - Splash: native launch screen now the same #050506 (no image) + in-app splash border removed = one continuous splash.
 - **UNVERIFIED (device):** embed servers inside the APK WebView; 2× / seek feel on a real phone.
 
+### U03 player UI = prototype — 2026-11-20 (Claude Code, branch fix/player-ui-proto)
+- Ported prototype `vcore(land)` / `pBtn` / `sheetHtml` (prototype/android/index.html) 1:1 into `player/controls.tsx`, replacing the vega-style bar (`.vg-*`): `.pl.t` back + `.grp` pills (portrait: bg play, quality, speed, PiP, ⋮; landscape: quality, speed, PiP, ⋮), `.pl.rm` lock (right middle portrait / left middle landscape, moved inward), `.pl.rm.bgp` bg play (landscape), `.pl.c` rew10 · play · fwd10, `.pl.bl` (portrait: subs, episodes*, prev*, next*; landscape: subs, audio, resize, server, episodes*, prev*, next*), `.pl.b` seek row with fullscreen / fullscreen-exit (docs/05 layout table). Server sheet added (real gateway servers, else prototype 1/2/3); ⋮ sheet got the server row.
+- Fixes: `.vid` got an inline `position:relative` from VideoHost, so the `<video>` collapsed to 0 px height (CSS `!important` fix, VideoHost untouched); hidden controls never catch taps; embed (iframe) mode keeps Back / Server / Fullscreen always visible (`controlsHidden`), touch-action auto there; gestures: pointer capture, `pointercancel` undoes (no commit), long-press context menu blocked, `<video>` has `pointer-events:none`; safe-area insets on landscape top/bottom/sides and sheets; rounded floating glass pills + sheets.
+- Desktop player: no 340 ms double-click delay; mouse click = play/pause (prototype web), touch tap = toggle controls; hidden `.ui` no longer clickable; embed bar always visible with real server switch + browser fullscreen; server button in bottom-left row (docs/05).
+- Pure logic `src/core/player-gesture.ts` + `tests/core/player-gesture.test.ts`.
+- **UNVERIFIED (device):** gesture feel / pointer capture inside the APK WebView and iOS Safari; embed iframes with the bar on top.
+
 ## Releases
 
 | Version | Date | Notes |

@@ -11,18 +11,19 @@ import { library, series, toast } from './state';
 import { Ic, Sv } from './ui';
 import { fetchStream } from '../../core/stream-resolver';
 import { LIVE_ALL } from '../../core/live';
+import { controlsHidden, desktopTapAction } from '../../core/player-gesture';
 
 
 
-interface DPl { on: boolean; title: Title | null; live: string; st: PlayerState; seasons: Seasons; pip: boolean; local?: string | null; embedUrl?: string | null; loading?: boolean }
+interface DPl { on: boolean; title: Title | null; live: string; st: PlayerState; seasons: Seasons; pip: boolean; local?: string | null; embedUrl?: string | null; loading?: boolean; servers?: string[]; srv?: number }
 export const dpl = createStore<DPl>('d-pl', { on: false, title: null, live: '', st: initialState({ titleId: 0, title: '', mediaType: 'movie' }), seasons: MOCK_SEASONS, pip: false, embedUrl: null, loading: false }, false);
 
 export function play(t: Title, season = 1, episode = 1, seasons?: Seasons, local?: string) {
   const m = series.load(t.id), k = dpl.get().st;
-  dpl.set({ on: true, pip: false, local: local || null, title: t, live: '', seasons: seasons || dpl.get().seasons, embedUrl: null, loading: !local, st: initialState({ titleId: t.id, title: t.title, mediaType: t.mediaType, season, episode, quality: m.quality, audio: m.audio, sub: m.sub, speed: k.speed, fit: k.fit }) });
+  dpl.set({ on: true, pip: false, local: local || null, title: t, live: '', seasons: seasons || dpl.get().seasons, embedUrl: null, servers: [], srv: 0, loading: !local, st: initialState({ titleId: t.id, title: t.title, mediaType: t.mediaType, season, episode, quality: m.quality, audio: m.audio, sub: m.sub, speed: k.speed, fit: k.fit }) });
 }
 export function playLive(label: string) {
-  dpl.set({ on: true, pip: false, local: null, title: null, live: label, embedUrl: null, loading: false, st: initialState({ titleId: -1, title: label, mediaType: 'live', quality: 720 }) });
+  dpl.set({ on: true, pip: false, local: null, title: null, live: label, embedUrl: null, servers: [], srv: 0, loading: false, st: initialState({ titleId: -1, title: label, mediaType: 'live', quality: 720 }) });
 }
 
 const cues = new Map<string, Cue[]>();
@@ -77,15 +78,13 @@ export function Player() {
 
     if (s.title) {
       void fetchStream(s.title.id, s.title.title, s.title.mediaType, st.season, st.episode).then((res) => {
-        dpl.set({ loading: false });
-        if (res?.embedUrl) {
-          dpl.set({ embedUrl: res.embedUrl });
-          return;
-        }
+        dpl.set({ loading: false, servers: res?.embeds || [], srv: 0 });
         if (res?.url && el) {
           el.src = res.url;
           if (st.playing) el.play().catch(() => {});
+          return;
         }
+        if (res?.embedUrl) dpl.set({ embedUrl: res.embedUrl });
       });
     }
   }, [st.titleId, st.season, st.episode, s.live]);
@@ -139,7 +138,9 @@ export function Player() {
     sub: [['Off', () => save({ sub: 'Off' }), st.sub === 'Off'], ...LANGS.flatMap(([c, n]): [string, () => void, boolean][] => (cues.has(c) ? [[n, () => save({ sub: c }), st.sub === c]] : [[n + ' · generate on device', () => startGen(c), false]]))],
     audio: [['Original', 'OG'], ['English dub', 'EN'], ['Hindi dub', 'HI'], ['Bangla dub', 'BN']].map(([l, c]) => [l, () => save({ audio: c }), st.audio === c]),
     eps: Array.from({ length: s.seasons[st.season - 1] || 6 }, (_, i): [string, () => void, boolean] => ['Season ' + st.season + ' · Episode ' + (i + 1), () => save({ episode: i + 1 }), st.episode === i + 1]),
-    server: [1, 2, 3].map((n) => ['Server ' + n, () => set({ server: n }), st.server === n]),
+    server: s.servers?.length
+      ? s.servers.map((u, i): [string, () => void, boolean] => ['Server ' + (i + 1), () => pickServer(i), !!s.embedUrl && s.srv === i])
+      : [1, 2, 3].map((n) => ['Server ' + n, () => set({ server: n }), st.server === n]),
     more: [
       ['Audio delay −100 ms', () => set({ audioDelayMs: st.audioDelayMs - 100 }), false], ['Audio delay +100 ms (' + st.audioDelayMs + ')', () => set({ audioDelayMs: st.audioDelayMs + 100 }), false],
       ['Subtitle delay −100 ms', () => set({ subDelayMs: st.subDelayMs - 100 }), false], ['Subtitle delay +100 ms (' + st.subDelayMs + ')', () => set({ subDelayMs: st.subDelayMs + 100 }), false],
@@ -148,31 +149,33 @@ export function Player() {
     ],
   };
   const c = cueAt(cues.get(st.sub) || [], pos - st.subDelayMs / 1000), css = subtitleCss(SUB_DEFAULT, 'l');
-  const lastClick = useRef(0);
-  const clickTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // prototype web Player: a mouse click on the picture toggles play; a touch tap toggles the controls
+  // (single tap hides, single tap shows). No double-click delay.
+  const ptype = useRef('mouse');
   const handlePlayerClick = (e: MouseEvent) => {
     const tg = e.target as HTMLElement;
-    if (tg.closest('button, .pb, .menu, .sk, .rw, input, select')) return;
-    const now = Date.now();
-    if (now - lastClick.current < 340) {
-      clearTimeout(clickTimer.current);
-      lastClick.current = 0;
-      set({ playing: !st.playing });
-      setHide(false);
-      return;
-    }
-    lastClick.current = now;
-    clickTimer.current = setTimeout(() => {
-      setHide((h) => !h);
-    }, 340);
+    if (tg.closest('button, .pb, .menu, .sk, .rw, input, select')) return bump();
+    if (s.embedUrl || s.pip) return;
+    if (st.locked) return bump();
+    if (desktopTapAction(ptype.current) === 'play') return (set({ playing: !dpl.get().st.playing }), bump());
+    if (hide) bump();
+    else (clearTimeout(tmr.current), setHide(true));
   };
+  const pickServer = (i: number) => {
+    const u = dpl.get().servers?.[i];
+    if (!u) return;
+    v.current?.pause();
+    dpl.set({ srv: i, embedUrl: u, loading: false });
+  };
+  const nextSrv = () => pickServer(((s.srv || 0) + 1) % Math.max(1, s.servers?.length || 1));
+  const fullscreen = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.())?.catch?.(() => {});
 
   useEffect(() => { setIframeLoaded(false); }, [s.embedUrl]);
   const bgImg = s.title?.backdrop ? `url(${img(s.title.backdrop, 'w1280')})` : undefined;
   const pipStyle = s.pip ? 'inset:auto;right:20px;bottom:20px;width:360px;height:203px;border-radius:14px;box-shadow:0 14px 36px rgba(0,0,0,.7)' : '';
   return (
-    <div class={'pl' + (hide ? ' hide' : '')} style={pipStyle} onMouseMove={bump}
-      onClick={handlePlayerClick}>
+    <div class={'pl' + (controlsHidden(hide, !!s.embedUrl) ? ' hide' : '')} style={pipStyle} onMouseMove={bump}
+      onPointerDown={(e) => (ptype.current = e.pointerType)} onClick={handlePlayerClick}>
       <div class={'vid real fit-' + st.fit} style={{ backgroundImage: bgImg, position: 'relative' }}>
         {s.embedUrl ? (
           <>
@@ -190,9 +193,9 @@ export function Player() {
               </div>
             )}
           </>
-        ) : (
-          <video ref={v} playsInline onTimeUpdate={timeUpd} onLoadedMetadata={() => setDur(v.current!.duration)} onEnded={() => (series2 ? ep(nextR) : set({ playing: false }))} />
-        )}
+        ) : null}
+        {/* always mounted so the ref survives a switch to an embed server */}
+        <video ref={v} playsInline style={s.embedUrl ? 'display:none' : undefined} onTimeUpdate={timeUpd} onLoadedMetadata={() => setDur(v.current!.duration)} onEnded={() => (series2 ? ep(nextR) : set({ playing: false }))} />
         {s.loading && (
           <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(5,6,10,0.85);z-index:3;gap:12px;pointer-events:none;">
             <div style="width:48px;height:48px;border:3.5px solid rgba(255,255,255,0.15);border-top-color:#38bdf8;border-right-color:#38bdf8;border-radius:50%;animation:spin 0.8s linear infinite;box-shadow:0 0 20px rgba(56,189,248,0.35);" />
@@ -202,11 +205,13 @@ export function Player() {
       </div>
       {c && !st.locked && <div class="psub" style={css.pos}><span style={css.span}>{c.text}</span></div>}
       {s.embedUrl ? (
-        <div class="ui" style="pointer-events:none;background:linear-gradient(rgba(0,0,0,0.85),transparent 25%);">
-          <div class="pt1" style="pointer-events:auto;">
-            <button class="pb" onClick={close}><Ic n="arrow-left" /></button>
+        // the iframe gets every click: this bar never hides (Back, Server switch, Fullscreen)
+        <div class="ui embed">
+          <div class="pt1">
+            <button class="pb" title="Back" onClick={close}><Ic n="arrow-left" /></button>
             <div class="gr">{s.live || st.title} {!s.live && st.mediaType === 'tv' && <small> S{st.season} · E{st.episode}</small>}</div>
-            <button class="pb" onClick={close}><Ic n="close" /></button>
+            {(s.servers?.length || 0) > 1 && <button class="pb srv" title="Switch server" onClick={nextSrv}><Ic n="server" /> Server {(s.srv || 0) + 1}/{s.servers!.length}</button>}
+            <button class="pb" title="Fullscreen" onClick={fullscreen}><Ic n="fullscreen" /></button>
           </div>
         </div>
       ) : s.pip ? (
@@ -237,7 +242,8 @@ export function Player() {
             <div class="rw">
               <button class="pb" onClick={() => setMenu('sub')}><Ic n={st.sub === 'Off' ? 'subtitles-outline' : 'subtitles'} /></button>
               <button class="pb" onClick={() => setMenu('audio')}><Ic n="waveform" /></button>
-              <button class={'pb' + (st.fit !== 'Fit' ? ' on' : '')} onClick={() => set({ fit: cycleFit(st).fit })}><Ic n="aspect-ratio" /></button>
+              <button class={'pb' + (st.fit !== 'Fit' ? ' on' : '')} title="Resize" onClick={() => set({ fit: cycleFit(st).fit })}><Ic n="aspect-ratio" /></button>
+              <button class="pb" title="Server" onClick={() => setMenu('server')}><Ic n="server" /></button>
               {series2 && <><button class="pb" onClick={() => setMenu('eps')}><Ic n="playlist-play" /></button><button class="pb" onClick={() => ep(prevR)}><Ic n="skip-previous" /></button><button class="pb" onClick={() => ep(nextR)}><Ic n="skip-next" /></button></>}
             </div>
             <div class="sk" onClick={(e) => {
