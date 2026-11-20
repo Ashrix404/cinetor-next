@@ -12,7 +12,7 @@ export function Reader() {
   const [pg, setPg] = useState(start);
   const [act, setAct] = useState(false);
   const rd = useRef<HTMLDivElement>(null);
-  const timer = useRef<ReturnType<typeof setTimeout>>();
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
     const el = rd.current?.querySelectorAll('.panelc')[start - 1] as HTMLElement | undefined;
     if (el && rd.current) rd.current.scrollTop = el.offsetTop;
