@@ -138,11 +138,11 @@ let currentResolveKey = '';
 /** true while playUrl is trying engines (its own timeouts decide; the <video> error listener stays quiet) */
 let starting = false;
 /** Start a direct media URL with engine fallback + timeout; `onFail` runs when nothing produced frames. */
-function startDirect(url: string, at: number, o: { nativeOnly?: boolean }, onFail: (why: string) => void) {
+function startDirect(url: string, at: number, onFail: (why: string) => void) {
   const v = getVideo();
   starting = true;
   v.playbackRate = pl.get().st.speed;
-  playUrl(v, url, { at, nativeOnly: o.nativeOnly, timeoutMs: 15000 }).then(
+  playUrl(v, url, { at, timeoutMs: 15000 }).then(
     () => {
       starting = false;
       v.playbackRate = pl.get().st.speed;
@@ -190,7 +190,7 @@ export function startAt(t: Title, season: number, episode: number, o: { seasons?
     pl.set({ servers: res.servers, srv: 0 });
     if (res.url) {
       // a real media file: play it in the shared <video>; if no engine gets frames, use the embed servers
-      startDirect(res.url, atPos, {}, () => {
+      startDirect(res.url, atPos, () => {
         if (currentResolveKey !== key) return;
         if (res.servers.length) tryServer(0);
         else pl.set({ loading: false, err: 'This stream could not be played' });
@@ -260,7 +260,7 @@ export function startLive(label: string, hue: number, streamUrl?: string) {
   currentResolveKey = '';
   pl.set({ active: true, pip: false, live: true, title: null, label, hue, st, local: null, embedUrl: null, servers: [], srv: 0, err: null, loading: true });
   if (!url) return pl.set({ loading: false, err: 'No channel to play' });
-  startDirect(url, 0, { nativeOnly: !!channel && channel[5] === url && !!channel[6] }, () => pl.set({ loading: false, err: 'This channel is offline right now. Try another channel.' }));
+  startDirect(url, 0, () => pl.set({ loading: false, err: 'This channel is offline right now. Try another channel.' }));
 }
 
 export function togglePlay() {

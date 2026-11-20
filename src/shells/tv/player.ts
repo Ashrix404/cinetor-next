@@ -65,7 +65,7 @@ function load(resume: boolean) {
     dropIframe();
     currentTvResolveKey = '';
     const channel = pickChannel(P?.label || '');
-    playUrl(v, channel?.[5] || '', { nativeOnly: !!channel?.[6] }).catch((e: Error) => e.message !== 'cancelled' && toastFn('This channel is offline right now. Try another channel.'));
+    playUrl(v, channel?.[5] || '').catch((e: Error) => e.message !== 'cancelled' && toastFn('This channel is offline right now. Try another channel.'));
   }
 }
 let srvTimer: ReturnType<typeof setTimeout> | undefined;

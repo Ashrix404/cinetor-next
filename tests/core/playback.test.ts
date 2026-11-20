@@ -13,7 +13,6 @@ describe('playback engines', () => {
   it('mp4 always goes native', () => expect(enginesFor('https://a/b.mp4', chrome)).toEqual(['native']));
   it('native HLS first, then hls.js, then hls.js through the proxy', () => expect(enginesFor('https://a/x.m3u8', native)).toEqual(['native', 'hls', 'hls-proxy']));
   it('desktop Chrome/Firefox: hls.js then proxy', () => expect(enginesFor('https://a/x.m3u8', chrome)).toEqual(['hls', 'hls-proxy']));
-  it('nativeOnly streams are never proxied', () => expect(enginesFor('https://a/x.m3u8', chrome, true)).toEqual(['hls']));
   it('no MSE and no native HLS still tries native (the error card shows)', () => expect(enginesFor('https://a/x.m3u8', old)).toEqual(['native']));
   it('proxify keeps the stream origin as Referer', () => {
     const p = proxify('https://cdn.test/live/a.m3u8');
@@ -59,9 +58,11 @@ describe('live channels', () => {
 });
 
 describe('embed servers', () => {
-  it('gateway servers first, extra players after, one per host', () => {
-    const s = buildServers(['https://vidlink.pro/movie/603', 'https://vidsrc.to/embed/movie/603', 'https://www.vidlink.pro/x'], 'movie', 603);
-    expect(s[0]).toEqual({ name: 'VidLink', url: 'https://vidlink.pro/movie/603' });
+  it('ranked by probe evidence, one per host (gateway url kept for its host)', () => {
+    const s = buildServers(['https://vidlink.pro/movie/603', 'https://vidsrc.to/embed/movie/603', 'https://www.vidlink.pro/x', 'https://autoembed.co/movie/tmdb/603'], 'movie', 603);
+    expect(s[0].url).toBe('https://vidsrc.su/movie/603');
+    expect(s[1]).toEqual({ name: 'VidLink', url: 'https://vidlink.pro/movie/603' });
+    expect(s[s.length - 1].url).toContain('autoembed.co');
     expect(s.map((x) => hostOf(x.url)).filter((h) => h === 'vidlink.pro').length).toBe(1);
     expect(s.length).toBeGreaterThan(2);
   });
@@ -84,7 +85,7 @@ describe('embed servers', () => {
       { embedUrl: 'https://vidlink.pro/movie/603', sources: [{ name: 'VidSrc Server 2 (1080p)', url: 'https://vidsrc.to/embed/movie/603', isDirect: false }], subtitles: [{ lang: 'en' }] },
       { type: 'movie', id: 603 }
     )!;
-    expect(r.servers[1].name).toBe('VidSrc');
+    expect(r.servers.find((x) => x.url.includes('vidsrc.to'))?.name).toBe('VidSrc');
     expect(r.embeds.length).toBe(r.servers.length);
     expect(r.subtitles).toEqual([]);
   });

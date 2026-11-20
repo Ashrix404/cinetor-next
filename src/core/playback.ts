@@ -29,13 +29,14 @@ export function proxify(url: string, referer?: string, fresh = false): string {
  * - mp4 & co.: native only (a <video> needs no CORS).
  * - HLS with native support (Safari, Android WebView/Chrome): native first, then hls.js, then hls.js via the proxy.
  * - HLS without native support (desktop Chrome/Firefox): hls.js, then hls.js via the proxy.
- * - `nativeOnly` streams (their CDN breaks behind the proxy): native only when it exists, else hls.js direct. */
-export function enginesFor(url: string, env: { nativeHls: boolean; mse: boolean }, nativeOnly = false): Engine[] {
+ * Probe 2026-11-20: some CDNs send no CORS header (Ekushey, 30A, beIN, CNN segments) -> only the proxy
+ * works in hls.js; some fail native (Cricket Gold, Rajdhani) -> hls.js works. Hence all three, in order. */
+export function enginesFor(url: string, env: { nativeHls: boolean; mse: boolean }): Engine[] {
   if (!isHlsUrl(url)) return ['native'];
   const out: Engine[] = [];
   if (env.nativeHls) out.push('native');
   if (env.mse) out.push('hls');
-  if (env.mse && !nativeOnly) out.push('hls-proxy');
+  if (env.mse) out.push('hls-proxy');
   return out.length ? out : ['native'];
 }
 
@@ -145,12 +146,12 @@ let token = 0;
 export async function playUrl(
   v: HTMLVideoElement,
   url: string,
-  o: { at?: number; timeoutMs?: number; nativeOnly?: boolean; autoplay?: boolean } = {}
+  o: { at?: number; timeoutMs?: number; autoplay?: boolean } = {}
 ): Promise<Engine> {
   const my = ++token;
   const ms = o.timeoutMs ?? 15000;
   let last: Error = new Error('no engine');
-  for (const eng of enginesFor(url, mediaEnv(v), o.nativeOnly)) {
+  for (const eng of enginesFor(url, mediaEnv(v))) {
     if (my !== token) throw new Error('cancelled');
     detach(v);
     try {

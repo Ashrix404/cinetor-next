@@ -65,7 +65,7 @@ export function Player() {
       // desktop Chrome/Firefox have no native HLS: playUrl picks native, hls.js or hls.js via the gateway proxy
       const channel = pickChannel(s.live, LIVE_ALL);
       dpl.set({ loading: true });
-      playUrl(el, channel?.[5] || '', { nativeOnly: !!channel?.[6] }).then(
+      playUrl(el, channel?.[5] || '').then(
         () => dpl.set({ loading: false }),
         (e: Error) => e.message !== 'cancelled' && (dpl.set({ loading: false }), toast('This channel is offline right now. Try another channel.'))
       );

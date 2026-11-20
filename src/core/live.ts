@@ -1,16 +1,15 @@
 import { GATEWAY_BASE } from './config';
 import { timeoutSignal } from './embeds';
 
-/** [short, name, hue, number, category, streamUrl, nativeOnly?]
- * Category is one of the TV genres the UI lists (catalog GEN.tv), otherwise the channel is never shown.
- * `nativeOnly` = the CDN only allows its own origin (CORS) and redirects per session, so it plays in a
- * native HLS <video> (APK, Safari) but not through hls.js / the proxy. */
-export type Channel = [string, string, number, string, string, string, (1 | 0)?];
+/** [short, name, hue, number, category, streamUrl]
+ * Category is one of the TV genres the UI lists (catalog GEN.tv), otherwise the channel is never shown. */
+export type Channel = [string, string, number, string, string, string];
 
-/** Every URL here was checked on 2026-11-20 (curl: playlist -> variant -> segment all 200/206 with
- * video/MP2T, plus the CI stream-probe in real Chrome). Dropped as dead: tsports.live (returns an HTML
- * page), somoynews.tv (HTML), NASA TV (variant 404), Channel S / ncare (segments 403), plain-http IP
- * streams (mixed content on https pages, refused by the gateway). */
+/** Every URL here was checked on 2026-11-20: curl from Bangladesh (playlist -> variant -> segment all
+ * 200/206 video/MP2T) and the CI stream-probe in real Chrome (frames advancing through native HLS, hls.js
+ * or hls.js via the gateway proxy). Dropped as dead: tsports.live and somoynews.tv (return an HTML page),
+ * NASA TV (403/404), Channel S / ncare (segments 403), Pluto jmp2.uk (fails in every engine), plain-http
+ * IP streams (mixed content on https pages, refused by the gateway). */
 export const LIVE: Channel[] = [
   ['RB', 'Red Bull TV', 340, '01', 'Sports', 'https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8'],
   ['S5', 'Sport 5', 120, '02', 'Sports', 'https://r.il.cdn-redge.media/livehls/oil/freetv/live/sport_5/live.livx/playlist.m3u8'],
@@ -36,12 +35,12 @@ export const LIVE: Channel[] = [
   ['JM', 'Jalsha Movies', 330, '32', 'Movies', 'https://box.bbaria.net:8083/Jalsha_Movie/tracks-v1a1/mono.m3u8'],
   ['MA', 'MAX Anime', 270, '40', 'Kids', 'https://cdnlive.klicgo.net/maxanime/live/playlist.m3u8'],
   ['CN', 'Cartoon Network', 190, '41', 'Kids', 'https://vodzong.mjunoon.tv:8087/streamtest/cartoon-network-87/live/87H/chunks.m3u8'],
-  ['AH', 'Anime x HIDIVE', 260, '42', 'Kids', 'https://jmp2.uk/plu-6793eaa4bc03978b9bc63db1.m3u8', 1],
-  ['AV', 'Avatar Animation', 160, '43', 'Kids', 'https://jmp2.uk/plu-656df599c0fc8800089c75ab.m3u8', 1],
+  ['MT', 'MeTV Toons', 160, '42', 'Kids', 'https://sr-live-weigel1.akamaized.net/out/v1/0d1dbf29e64e47bc991796cc24fbeb97/index_2.m3u8'],
   ['3M', '30A Music', 300, '50', 'Music', 'https://30a-tv.com/music.m3u8'],
   ['DM', 'Deluxe Music', 320, '51', 'Music', 'https://sdn-global-live-streaming-packager-cache.3qsdn.com/13456/13456_264_live.m3u8'],
   ['BD', 'Best of Dance TV', 290, '52', 'Music', 'https://m1b2.worldcast.tv/dancetelevisionone/dancetelevisionone.m3u8'],
   ['B4', 'B4U Music', 350, '53', 'Music', 'https://amg00877-b4unew-amg00877c3-xiaomi-in-5474.playouts.now.amagi.tv/720p/index.m3u8'],
+  ['CC', 'California Music', 50, '54', 'Music', 'https://cmc-cmctv-cineverse.amagi.tv/playlist.m3u8'],
 ];
 
 export const LIVE_ALL: Channel[] = [...LIVE];
@@ -49,7 +48,7 @@ export const LIVE_ALL: Channel[] = [...LIVE];
 export const channelsIn = (cat: string) => LIVE_ALL.filter((c) => cat === 'All' || c[4] === cat);
 
 /** Known dead hosts the gateway's /v1/live still lists (it cannot be redeployed from here). */
-const DEAD = /(^|\.)(tsports\.live|somoynews\.tv|ntv1\.akamaized\.net|ncare\.live)$/i;
+const DEAD = /(^|\.)(tsports\.live|somoynews\.tv|ntv1\.akamaized\.net|ncare\.live|jmp2\.uk)$/i;
 const CAT: Record<string, string> = { Bangla: 'Regional', Science: 'Documentary', Anime: 'Kids', Animation: 'Kids' };
 
 /** A gateway channel is usable when it is https (no mixed content), not a known-dead host and an HLS URL. */

@@ -2,6 +2,7 @@
 """Writes live.json for the probe: every candidate channel x (direct hls.js, proxied hls.js, native <video>)."""
 import json
 
+# initial candidate list (the live.json in git is generated from src/core/live.ts)
 C = [
     ("T Sports (old)", "https://tsports.live/live.m3u8"),
     ("Somoy TV (old)", "https://somoynews.tv/live/somoytv.m3u8"),

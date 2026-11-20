@@ -7,16 +7,23 @@ export interface Server {
 
 type Kind = 'movie' | 'tv' | string;
 
-/** Extra embed players added on the client (the gateway only returns three). Each pattern was loaded in
- * real Chrome by the CI stream-probe (scripts/stream-probe) and produced video frames. */
+/** Extra embed players added on the client (the gateway only returns three templated URLs).
+ * CI stream-probe 2026-11-20 (real Chrome, iframe, two taps): vidsrc.su, vidlink (movies), 2embed and
+ * vidsrc.wtf produced advancing video frames; vidsrc.to and vidfast rendered a player but no frames
+ * without more taps; the rest showed no player at all. */
 const EXTRA: { name: string; movie: (id: string) => string; tv: (id: string, s: number, e: number) => string }[] = [
-  { name: 'VidFast', movie: (id) => `https://vidfast.pro/movie/${id}`, tv: (id, s, e) => `https://vidfast.pro/tv/${id}/${s}/${e}` },
-  { name: 'VidSrc CC', movie: (id) => `https://vidsrc.cc/v2/embed/movie/${id}`, tv: (id, s, e) => `https://vidsrc.cc/v2/embed/tv/${id}/${s}/${e}` },
+  { name: 'VidSrc SU', movie: (id) => `https://vidsrc.su/movie/${id}`, tv: (id, s, e) => `https://vidsrc.su/tv/${id}/${s}/${e}` },
+  { name: 'VidLink', movie: (id) => `https://vidlink.pro/movie/${id}`, tv: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}` },
   { name: '2Embed', movie: (id) => `https://www.2embed.cc/embed/${id}`, tv: (id, s, e) => `https://www.2embed.cc/embedtv/${id}&s=${s}&e=${e}` },
+  { name: 'Viduki', movie: (id) => `https://vidsrc.wtf/api/1/movie/?id=${id}`, tv: (id, s, e) => `https://vidsrc.wtf/api/1/tv/?id=${id}&s=${s}&e=${e}` },
+  { name: 'VidSrc', movie: (id) => `https://vidsrc.to/embed/movie/${id}`, tv: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}` },
+  { name: 'VidFast', movie: (id) => `https://vidfast.pro/movie/${id}`, tv: (id, s, e) => `https://vidfast.pro/tv/${id}/${s}/${e}` },
 ];
+/** Best first, by the probe evidence above; hosts not listed go last. */
+const RANK = ['vidsrc.su', 'vidlink.pro', '2embed.cc', 'vidsrc.wtf', 'vidsrc.to', 'vidfast.pro', 'autoembed.co'];
 
-/** Hosts proven dead (DNS NXDOMAIN or no player) on 2026-11-20; never offered even if a source lists them. */
-const DEAD_HOSTS = /(^|\.)(vidsrc\.xyz|moviesapi\.club|player\.autoembed\.cc|vidking\.net|vidsrc\.vip|player\.videasy\.net|111movies\.com)$/i;
+/** Hosts proven dead on 2026-11-20 (DNS NXDOMAIN, or no player in the probe); never offered. */
+const DEAD_HOSTS = /(^|\.)(vidsrc\.xyz|moviesapi\.club|player\.autoembed\.cc|vidking\.net|vidsrc\.vip|player\.videasy\.net|111movies\.com|vidsrc\.cc|embed\.su|vidsrc\.rip|multiembed\.mov)$/i;
 
 export const hostOf = (u: string) => {
   try {
@@ -32,7 +39,7 @@ const NICE: Record<string, string> = {
   'autoembed.co': 'AutoEmbed',
 };
 
-/** Gateway embeds first (in gateway order), then the extra players; one entry per host, dead hosts dropped. */
+/** Gateway embeds + extra players, one entry per host, dead hosts dropped, best first (RANK). */
 export function buildServers(gatewayEmbeds: string[], kind: Kind, id: number | string, s = 1, e = 1): Server[] {
   const out: Server[] = [];
   const seen = new Set<string>();
@@ -45,7 +52,11 @@ export function buildServers(gatewayEmbeds: string[], kind: Kind, id: number | s
   gatewayEmbeds.forEach((u, i) => add(NICE[hostOf(u)] || 'Server ' + (i + 1), u));
   const sid = String(id);
   for (const x of EXTRA) add(x.name, kind === 'tv' || kind === 'anime' ? x.tv(sid, s, e) : x.movie(sid));
-  return out;
+  const rank = (u: string) => {
+    const i = RANK.indexOf(hostOf(u));
+    return i < 0 ? RANK.length : i;
+  };
+  return out.map((x, i) => ({ x, i })).sort((a, b) => rank(a.x.url) - rank(b.x.url) || a.i - b.i).map((y) => y.x);
 }
 
 /** Index of the next server to try after `from`, skipping servers already tried; -1 when all were tried. */
