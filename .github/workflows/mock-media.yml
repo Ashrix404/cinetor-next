@@ -1,0 +1,26 @@
+name: mock-media
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['media/**', '.github/workflows/mock-media.yml']
+permissions:
+  contents: read
+concurrency:
+  group: mock-media
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - run: bash media/build-media.sh
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          personal_token: ${{ secrets.RELEASE_REPO_TOKEN }}
+          external_repository: Ashrix404/cinetor-releases
+          publish_branch: gh-pages
+          publish_dir: media/out
+          destination_dir: media
+          keep_files: true

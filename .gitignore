@@ -11,3 +11,4 @@ config.js
 *.jks
 *.keystore
 *.b64
+media/out/
