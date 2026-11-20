@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cinetor TV</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;800&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/MaterialDesign-Webfont/7.4.47/css/materialdesignicons.min.css">
+<script src="../config.js" onerror="void 0"></script>
+<style>
+/* Cinetor Android TV preview. Self-contained: delete this folder (tv/) to remove it. */
+:root{color-scheme:dark;--bg:#000;--c:#141416;--c2:#1f1f23;--on:#f5f0ef;--dim:#a8a2a1;--p:#fff;--onp:#111;--line:#34343a}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#050505;color:var(--on);font-family:Roboto,system-ui,sans-serif;overflow:hidden}
+#tv{position:absolute;left:50%;top:50%;width:1280px;height:720px;background:var(--bg);overflow:hidden;transform-origin:0 0}
+#side{position:absolute;left:0;top:0;bottom:0;width:92px;padding:22px 12px;display:flex;flex-direction:column;gap:6px;background:linear-gradient(90deg,#000 70%,transparent);z-index:20;}
+#side:focus-within,#side:hover{width:230px}
+.logo{display:flex;align-items:center;gap:12px;height:48px;padding-left:10px;margin-bottom:10px;font-weight:800;letter-spacing:.2em;white-space:nowrap;overflow:hidden}.logo svg{width:32px;height:32px;flex:none}.logo span{opacity:0;}#side:focus-within .logo span,#side:hover .logo span{opacity:1}
+.nv{display:flex;align-items:center;gap:16px;height:46px;padding:0 14px;border-radius:12px;font-size:17px;white-space:nowrap;overflow:hidden;color:var(--dim);cursor:pointer}
+.nv i{font-size:24px;flex:none}.nv b{font-weight:500;opacity:0;}#side:focus-within .nv b,#side:hover .nv b{opacity:1}
+.nv.on{color:var(--on)}.nv.on i{color:var(--p)}
+#main{position:absolute;left:92px;right:0;top:0;bottom:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none}#main::-webkit-scrollbar{display:none}
+[data-f]{outline:none}
+[data-f].f{outline:3px solid #fff;outline-offset:2px;position:relative;z-index:5}
+.nv.f{background:#fff;color:#111;outline:none}.nv.f i{color:#111}
+.hero{position:relative;height:430px;padding:150px 60px 0 48px;background:linear-gradient(90deg,#000 8%,transparent 70%),linear-gradient(0deg,#000,transparent 55%),var(--hbg)}
+.hero h1{font-size:50px;font-weight:800;margin:0 0 10px;max-width:640px;line-height:1.02;letter-spacing:-.02em}
+.meta{display:flex;gap:12px;align-items:center;color:var(--dim);font-size:16px;margin-bottom:12px}.meta .rt{color:#fff;font-weight:700}.meta .rt i{color:#ffc933}
+.syn{max-width:560px;color:#d2cccb;font-size:16px;line-height:1.45;margin-bottom:20px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.btns{display:flex;gap:14px}.btn{display:inline-flex;align-items:center;gap:10px;height:50px;padding:0 28px;border-radius:999px;background:#2a2a2e;font-size:18px;font-weight:600;cursor:pointer}.btn.p{background:#fff;color:#111}
+.btn.f{background:#fff;color:#111}
+.chips{display:flex;gap:10px;padding:6px 48px 4px;flex-wrap:wrap}.chip{height:38px;padding:0 20px;border-radius:999px;border:1.5px solid var(--line);display:inline-flex;align-items:center;font-size:16px;cursor:pointer}.chip.on{background:#2a2a2e;border-color:#fff}.chip.f{background:#fff;color:#111}
+.row{padding:14px 0 6px}.row h3{margin:0 0 10px 48px;font-size:22px;font-weight:700}
+.rail{display:flex;gap:16px;padding:10px 48px 14px;overflow-x:auto;scrollbar-width:none}.rail::-webkit-scrollbar{display:none}
+.pt{flex:none;width:158px;height:236px;border-radius:12px;position:relative;overflow:hidden;background:linear-gradient(160deg,hsl(var(--h) 55% 36%),hsl(calc(var(--h) + 40) 50% 12%)) center/cover;cursor:pointer}
+.pt span{position:absolute;left:10px;right:10px;bottom:9px;font-size:14px;font-weight:600;line-height:1.15;text-shadow:0 1px 6px #000}
+.pt::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.8),transparent 50%)}.pt span,.pt .r{z-index:2}
+.pt .r{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.65);padding:1px 7px;border-radius:7px;font-size:12px;font-weight:700}.pt .r i{color:#ffc933;font-size:12px}
+.pt.w{width:260px;height:146px}.pt .bar{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.25);z-index:3}.pt .bar b{display:block;height:100%;background:#fff}
+.ttl{padding:42px 48px 6px;font-size:36px;font-weight:800}.sub{padding:0 48px 8px;color:var(--dim);font-size:17px}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:18px;padding:12px 48px 40px}.grid .pt{width:100%;height:230px}
+.ch{flex:none;width:200px;height:112px;border-radius:12px;background:var(--c2);display:grid;place-items:center;text-align:center;cursor:pointer}.ch b{font-size:26px;display:block}.ch small{color:var(--dim);font-size:13px}
+.mc{flex:none;width:330px;border-radius:14px;background:var(--c);padding:14px 16px;border:1.5px solid var(--line);cursor:pointer}.mc small{color:var(--dim)}.mc .t{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:20px;font-weight:600}
+.live{background:#fff;color:#111;font-size:12px;font-weight:800;padding:1px 8px;border-radius:8px}
+.set{margin:0 48px 12px;width:640px;display:flex;align-items:center;gap:18px;padding:16px 20px;border-radius:14px;background:var(--c);font-size:19px;cursor:pointer}.set i{font-size:26px;color:var(--dim)}.set small{display:block;color:var(--dim);font-size:14px}.set .g{flex:1}
+.swt{width:56px;height:30px;border-radius:15px;background:var(--c2);border:2px solid var(--dim);position:relative}.swt::after{content:"";position:absolute;top:4px;left:5px;width:16px;height:16px;border-radius:50%;background:var(--dim)}.swt.on{background:#fff;border-color:#fff}.swt.on::after{left:29px;top:3px;width:20px;height:20px;background:#111}
+.pad{display:grid;grid-template-columns:repeat(3,92px);gap:12px;justify-content:center;margin-top:18px}.pad .k{height:62px;border-radius:14px;background:var(--c2);display:grid;place-items:center;font-size:26px;font-weight:600;cursor:pointer}
+.pc{text-align:center;padding-top:80px}.pc h2{font-size:34px;margin:10px 0}.dots{display:flex;gap:16px;justify-content:center;margin:14px 0}.dots i{width:18px;height:18px;border-radius:50%;border:2px solid var(--dim)}.dots i.on{background:#fff;border-color:#fff}
+.dtl{display:flex;gap:40px;padding:0 48px}.cast{display:flex;gap:18px;padding:8px 48px 14px;overflow-x:auto;scrollbar-width:none}.cast .c{flex:none;width:96px;text-align:center;font-size:13px;cursor:pointer}.cast u{display:grid;place-items:center;width:84px;height:84px;margin:0 auto 6px;border-radius:50%;background:var(--c2) center/cover;text-decoration:none;font-size:26px;font-weight:700}
+.ep{display:flex;gap:16px;align-items:center;margin:0 48px 10px;padding:10px;border-radius:12px;background:var(--c);width:720px;cursor:pointer}.ep .th{width:160px;height:90px;border-radius:8px;background:linear-gradient(150deg,hsl(var(--h) 50% 34%),#111);position:relative;overflow:hidden;flex:none}.ep b{font-size:18px}.ep small{display:block;color:var(--dim)}
+/* player */
+#player{position:absolute;inset:0;z-index:50;background:radial-gradient(ellipse at 50% 40%,hsl(var(--h) 40% 24%),#030304 72%)}
+#player .ui{position:absolute;inset:0;}#player.hide .ui{visibility:hidden}
+.ptop{position:absolute;left:40px;right:40px;top:28px;display:flex;gap:12px;align-items:center}.ptop .g{flex:1;font-size:24px;font-weight:600}
+.pb{width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.14);display:grid;place-items:center;font-size:24px;cursor:pointer}.pb.f{background:#fff;color:#111}
+.pmid{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);display:flex;justify-content:center;align-items:center;gap:44px}.pmid .pb{width:76px;height:76px;font-size:38px}.pmid .big{width:100px;height:100px;font-size:54px;background:#fff;color:#111}
+.pbot{position:absolute;left:40px;right:40px;bottom:30px}.pbot .row2{display:flex;gap:10px;margin-bottom:14px}
+.seek{height:8px;border-radius:4px;background:rgba(255,255,255,.25);position:relative;cursor:pointer}.seek b{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:#fff}.seek.f{box-shadow:0 0 0 3px #fff}
+.tm{display:flex;justify-content:space-between;font-size:15px;color:var(--dim);margin-top:8px}
+.menu{position:absolute;right:30px;bottom:110px;width:320px;max-height:420px;overflow:auto;background:#1b1b1f;border-radius:16px;padding:10px;z-index:60}.menu div{padding:13px 16px;border-radius:10px;font-size:18px;display:flex;justify-content:space-between;cursor:pointer}.menu div.f{background:#fff;color:#111;transform:none;box-shadow:none}
+.toast{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);background:#e9e5e4;color:#111;padding:12px 22px;border-radius:12px;font-size:17px;z-index:99}
+#splash{position:absolute;inset:0;z-index:100;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 40%,#1c1c20,#050506 70%);transition:opacity .6s}#splash.out{opacity:0}
+#splash div{text-align:center}#splash svg{width:120px;fill:none;stroke:#fff;stroke-width:1.1;stroke-linecap:round}#splash h1{font-weight:300;letter-spacing:.3em;font-size:36px;margin:20px 0 0;padding-left:.3em}#splash h1 b{font-weight:800}#splash small{color:#6f6a6a;letter-spacing:.16em;display:block;margin-top:50px;font-size:13px}
+
+.pt.see{display:grid;place-items:center;text-align:center;background:var(--c2);font-size:40px}.pt.see b{font-size:16px;font-weight:600;display:block;margin-top:4px}.pt.see::after{display:none}.ch.see{font-size:34px;color:var(--dim)}.ch.see b{font-size:16px}
+.ch{position:relative}
+.spr{display:flex;gap:22px;padding:14px 48px 8px}.spc{flex:none;width:92px;text-align:center;cursor:pointer}.spc .ring{position:relative;display:grid;place-items:center;width:84px;height:84px;margin:0 auto;border-radius:50%;border:2px solid var(--line);background:var(--c);font-size:36px}.spc.on .ring{border-color:#fff}.spc small{display:block;margin-top:8px;font-size:16px}.spc.f .ring{background:#fff;color:#111}
+.bdg{position:absolute;top:-4px;right:-4px;min-width:26px;height:26px;border-radius:50%;background:#fff;color:#111;font-size:14px;font-weight:800;display:grid;place-items:center}
+.sts{display:flex;gap:12px;padding:8px 48px}.sts span{height:46px;padding:0 24px;border-radius:14px;border:2px solid var(--line);background:var(--c);display:inline-flex;align-items:center;font-size:18px;font-weight:600;cursor:pointer}.sts span.on{border-color:#fff}.sts span.f{background:#fff;color:#111}
+.mgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;padding:12px 48px 40px}
+.mcd{border:2px solid var(--line);border-radius:16px;background:var(--c);padding:14px 18px;cursor:pointer}.mh{display:flex;justify-content:space-between;gap:10px;font-size:16px;font-weight:600;color:var(--dim)}.mr{display:flex;gap:8px;align-items:center;white-space:nowrap;color:var(--dim)}.tmc{color:#fff;font-weight:700}
+.mbd{display:grid;grid-template-columns:56px 1fr auto 1fr 56px;gap:10px;align-items:center;padding-top:12px}.tn{font-size:20px;font-weight:600;line-height:1.1}.mbd .tn:nth-of-type(1){text-align:right}.vs{font-size:22px}
+.cr{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:16px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)}.cr.tc{background:var(--c2)}
+.row h3{display:flex;justify-content:space-between;align-items:center;padding-right:48px}.seeb{display:inline-flex;align-items:center;gap:4px;font-size:17px;font-weight:500;color:var(--dim);padding:6px 16px;border-radius:999px;cursor:pointer}.seeb.f{background:#fff;color:#111;transform:none;box-shadow:none}
+.backbar{padding:18px 48px 0}.backbar .btn{height:44px;font-size:17px}
+</style></head><body>
+<div id="tv"><div id="side"></div><div id="main"></div></div>
+<script>
+const SVGMARK='<svg viewBox="0 0 24 24"><path d="M17.3 7.7a6.9 6.9 0 1 0 0 8.6" stroke-width="2.4"/><path d="M11.4 9.6l4.2 2.4-4.2 2.4z" fill="#fff" stroke="#fff" stroke-width=".8" stroke-linejoin="round"/></svg>';
+const $=s=>document.querySelector(s),esc=s=>String(s).replace(/"/g,'&quot;'),I=n=>`<i class="mdi mdi-${n}"></i>`;
+const hs=t=>[...t].reduce((a,c)=>(a*31+c.charCodeAt(0))>>>0,7);
+/* ---- scale 1280x720 to the window ---- */
+function fit(){const t=$('#tv'),k=Math.min(innerWidth/1280,innerHeight/720);t.style.transform=`scale(${k}) translate(-50%,-50%)`;t.style.left='50%';t.style.top='50%'}
+addEventListener('resize',fit);fit();
+/* ---- data (placeholders, replaced by TMDB when ../config.js has a token) ---- */
+const W1=['Silent','Crimson','Hollow','Golden','Midnight','Iron','Glass','Paper','Salt','Ember','Velvet','Northern'],W2=['Harbor','Orchard','Gate','Ledger','Court','Tide','Lantern','Station','Meridian','Garden'];
+const gen=(sd,n)=>Array.from({length:n},(_,i)=>{const t=W1[(i+sd)%12]+' '+W2[(i*3+sd)%10];return [t,hs(t)%360]});
+const REAL={};let TMKEY=window.CINETOR_TMDB||'';
+const L={home:gen(0,24),anime:gen(3,18),'K-Drama':gen(5,16),'C-Drama':gen(7,16),'J-Drama':gen(9,16),'Pakistani Drama':gen(11,16),adult:gen(6,14),music:gen(8,12)};
+const GEN=['Action','Adventure','Comedy','Crime','Drama','Family','Fantasy','Horror','Mystery','Romance','Sci-Fi','Thriller'];
+const CHN=['News 24','Cinema One','Kids Zone','Nature HD','Music Hub','Drama Plus','Sport Arena','Comedy Club'];
+const MATCH=[['Cricket','Asia Cup Rising Stars','Pakistan A','UAE'],['Cricket','ICC World Test Championship','Pakistan','Sri Lanka'],['Basketball','NBA','Memphis Grizzlies','Golden State Warriors'],['Motorsports','Formula 1','Formula 1','Formula 1']];
+async function tm(p){const b=TMKEY.length>60;const r=await fetch('https://api.themoviedb.org/3'+p+(b?'':(p.includes('?')?'&':'?')+'api_key='+TMKEY),b?{headers:{Authorization:'Bearer '+TMKEY}}:{});if(!r.ok)throw 0;return r.json()}
+async function loadTm(){if(!TMKEY)return;try{const get=async ps=>(await Promise.allSettled(ps.map(tm))).flatMap(x=>x.status==='fulfilled'?x.value.results:[]);
+ const mk=it=>{const t=it.title||it.name;if(!t||!it.poster_path)return null;REAL[t]=REAL[t]||{id:it.id,mt:it.media_type||(it.title?'movie':'tv'),p:it.poster_path,b:it.backdrop_path,r:it.vote_average||0,y:(it.release_date||it.first_air_date||'').slice(0,4),o:it.overview};return [t,hs(t)%360]};
+ const ls=async ps=>{const s=new Set(),o=[];(await get(ps)).forEach(i=>{const x=mk(i);if(x&&!s.has(x[0])){s.add(x[0]);o.push(x)}});return o};
+ const [h,a,ko,zh,ja,ur,ad]=await Promise.all([ls(['/trending/all/week','/movie/popular','/tv/popular']),ls(['/discover/tv?with_genres=16&with_original_language=ja']),ls(['/discover/tv?with_original_language=ko']),ls(['/discover/tv?with_original_language=zh']),ls(['/discover/tv?with_original_language=ja&with_genres=18']),ls(['/discover/tv?with_original_language=ur','/discover/tv?with_original_language=hi']),ls(['/discover/movie?with_genres=27','/discover/movie?with_genres=53','/discover/movie?with_genres=10749'])]);
+ const set=(k,v)=>{if(v.length>=6)L[k]=v};set('home',h);set('anime',a);set('K-Drama',ko);set('C-Drama',zh);set('J-Drama',ja);set('Pakistani Drama',ur);set('adult',ad);render(true)}catch(e){}}
+const rating=t=>REAL[t]?REAL[t].r.toFixed(1):(5+(hs(t)%45)/10).toFixed(1);
+const bg=(t,w)=>REAL[t]?`;background-image:url(https://image.tmdb.org/t/p/${w}${REAL[t].p})`:'';
+/* ---- state ---- */
+const S={cw:[['Silent Harbor',215,62],['Iron Orchard',20,18],['Glass Tide',240,85]],ser:{},view:'home',stack:[],opt:{drama:'K-Drama',tv:'Live TV',cat:'All'},saved:{},watch:{},pl:null,lastF:{}};
+try{S.adult=JSON.parse(localStorage.getItem('cinetor-adult')||'{}')}catch(e){}S.adult=Object.assign({on:false,pin:''},S.adult);
+const saveAd=()=>{try{localStorage.setItem('cinetor-adult',JSON.stringify(S.adult))}catch(e){}};
+const pinH=x=>[...x].reduce((a,c)=>(a*131+c.charCodeAt(0))>>>0,17)+'';
+const NAV=[['search','magnify','Search'],['home','home','Home'],['anime','star-four-points-outline','Anime'],['drama','drama-masks','Drama'],['tv','television-classic','TV'],['music','music-note','Music'],['adult','shield-lock-outline','Adult'],['library','bookmark-multiple-outline','My Library'],['settings','cog-outline','Settings']];
+const pt=(t,h,x='')=>`<div class="pt" data-f data-go="info" data-t="${esc(t)}" style="--h:${h}${bg(t,'w185')}"><b class="r"><i class="mdi mdi-star"></i> ${rating(t)}</b><span>${t}</span>${x}</div>`;
+const LISTS={};let LID=0;const seeTile=(id,t)=>`<div class="pt see" data-f data-do="seeall" data-lid="${id}" data-t="${esc(t)}">${I('arrow-right-circle-outline')}<b>See all</b></div>`;
+const seeB=(id,t)=>`<span class="seeb" data-f data-do="seeall" data-lid="${id}" data-t="${esc(t)}">See all ${I('chevron-right')}</span>`;
+const row=(t,a)=>{const id='L'+(++LID);LISTS[id]={t,a};return `<div class="row"><h3><span>${t}</span>${seeB(id,t)}</h3><div class="rail">${a.map(([n,h])=>pt(n,h)).join('')}</div></div>`};
+const hero=(it,go='info')=>{const [t,h]=it,r=REAL[t];return `<div class="hero" style="--hbg:linear-gradient(160deg,hsl(${h} 55% 30%),#050505)${r&&r.b?`,url(https://image.tmdb.org/t/p/w780${r.b}) center/cover`:''}"><h1>${t}</h1><div class="meta"><span class="rt">${I('star')} ${rating(t)} TMDB</span><span>${r?r.y:'2025'}</span><span>TV-14</span><span>1080p</span></div><div class="syn">${r&&r.o?r.o:'A night-shift inspector finds a ledger that was never supposed to exist, and a town that would rather it stayed buried.'}</div><div class="btns"><span class="btn p" data-f data-go="${go}" data-t="${esc(t)}">${I('play')} Play</span><span class="btn" data-f data-do="lib" data-t="${esc(t)}">${I(S.saved[t]?'check':'plus')} My List</span></div></div>`};
+const chips=(k,list,cur)=>`<div class="chips">${list.map(x=>`<span class="chip${x===cur?' on':''}" data-f data-do="opt" data-k="${k}" data-v="${x}">${x}</span>`).join('')}</div>`;
+const cwRow=()=>S.cw.length?`<div class="row"><h3>Continue watching <small style="color:var(--dim);font-weight:400;font-size:14px">  Press Delete to remove the selected one</small></h3><div class="rail">${S.cw.map(([n,h,w],i)=>pt(n,h,`<div class="bar"><b style="width:${w}%"></b></div>`).replace('data-go="info"',`data-go="info" data-cw="${i}"`)).join('')}<div class="pt see" data-f data-do="cwclear">${I('delete-sweep-outline')}<b>Clear all</b></div></div></div>`:'';
+function feed(key){const a=L[key]||L.home,c=S.opt.cat;return hero(a[0])+chips('cat',['All',...GEN],c)+(c==='All'?(key==='home'?cwRow():'')+row('Trending now',a.slice(1,10))+row('Top rated',a.slice(5,13))+GEN.slice(0,3).map((g,i)=>row('Top '+g,a.filter((_,j)=>(j+i)%3===0).slice(0,8))).join(''):`<div class="ttl">${c}</div><div class="grid">${a.filter((_,j)=>(j+GEN.indexOf(c))%2===0).slice(0,12).map(([n,h])=>pt(n,h)).join('')}</div>`)}
+/* ---- views ---- */
+const V={
+ home:()=>feed('home'),anime:()=>feed('anime'),
+ drama:()=>{const o=S.opt.drama;return `<div style="height:14px"></div>${chips('drama',['K-Drama','C-Drama','J-Drama','Pakistani Drama'],o)}`+feed(o)},
+ music:()=>`<div class="ttl">Music</div><div class="sub">Playlists made for you</div><div class="grid">${L.music.map(([n,h])=>`<div class="pt" data-f data-do="toast" data-m="Playing ${esc(n)}" style="--h:${h}"><span>${n}</span></div>`).join('')}</div>`,
+ tv:()=>`<div class="ttl">TV</div>${chips('tv',['Live TV','Sports'],S.opt.tv)}`+(S.opt.tv==='Live TV'?CATS.map(([c,names],ci)=>{const id='L'+(++LID);LISTS[id]={t:c+' channels',a:names.map(n=>[n,hs(n)%360])};return `<div class="row"><h3><span>${c}</span>${seeB(id,c)}</h3><div class="rail">${names.map((n,i)=>`<div class="ch" data-f data-go="player" data-t="${esc(n)}" data-live="1"><span class="live" style="position:absolute;top:10px;right:10px">LIVE</span><div><b>${n.slice(0,2).toUpperCase()}</b><small>${n} · Ch ${100+ci*10+i}</small></div></div>`).join('')}</div></div>`}).join(''):sportsView()),
+ settings:()=>`<div class="ttl">Settings</div><div style="height:14px"></div><div class="set" data-f data-do="adultset">${I('shield-lock-outline')}<div class="g">Adult section<small>${S.adult.on?'On · PIN required to open':'Off · enable with a PIN'}</small></div><div class="swt${S.adult.on?' on':''}"></div></div>${S.adult.on?`<div class="set" data-f data-do="pinchg">${I('key-variant')}<div class="g">Change PIN<small>Verify the current PIN first</small></div></div>`:''}<div class="set" data-f data-do="toast" data-m="Cinetor TV 5.3.3">${I('information-outline')}<div class="g">About Cinetor<small>Developed by Mythbrix</small></div></div>`,
+ search:()=>`<div class="ttl">Search</div><div class="sub">Pick a title</div><div class="grid">${L.home.concat(L.anime).slice(0,24).map(([n,h])=>pt(n,h)).join('')}</div>`,
+ info:()=>{const t=S.cur,h=hs(t)%360,r=REAL[t],eps=['Low Tide','The Ledger','Fog Horn','Salt Line','Night Shift','Harbor Bell'],s=S.season||1;
+  return hero([t,h],'player')+`<div class="row"><h3>Cast</h3><div class="cast">${(r&&r.cast||['Mira Kovac','Tobias Rune','Aiko Sen','Dario Vale','Noor Hale','Piet Lund'].map(n=>({n}))).map(c=>`<div class="c" data-f ${c.id?`data-do="person" data-pid="${c.id}" data-t="${esc(c.n)}"`:`data-do="toast" data-m="${esc(c.n)}"`}><u style="${c.p?`background-image:url(https://image.tmdb.org/t/p/w185${c.p})`:''}">${c.p?'':c.n[0]}</u>${c.n}</div>`).join('')}</div></div>
+  <div class="chips">${[1,2,3].map(x=>`<span class="chip${x===s?' on':''}" data-f data-do="season" data-v="${x}">Season ${x}</span>`).join('')}</div><div style="height:12px"></div>${eps.map((n,i)=>{const k=t+'|'+s+'|'+(i+1),w=S.watch[k]||0;return `<div class="ep" data-f data-go="player" data-t="${esc(t)}" data-s="${s}" data-e="${i+1}"><div class="th" style="--h:${h+i*10}"><div class="bar" style="position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.25)">${w>.01?`<b style="display:block;height:100%;width:${Math.round(w*100)}%;background:#fff"></b>`:''}</div></div><div><b>${i+1}. ${n}</b><small>48 min${w>.01?' · '+Math.round(w*100)+'% watched':''}</small></div></div>`}).join('')}`+row('For you',L.home.slice(4,12))},
+};
+
+V.list=()=>{const l=LISTS[S.lid]||{t:'',a:[]};return `<div class="ttl">${l.t}</div><div class="sub">${l.a.length} titles</div><div class="grid">${l.a.map(([n,h])=>pt(n,h)).join('')}</div>`};
+V.library=()=>{const a=Object.keys(S.saved).filter(k=>S.saved[k]);return `<div class="ttl">My Library</div><div class="sub">Titles you saved</div>${a.length?`<div class="grid">${a.map(n=>pt(n,hs(n)%360)).join('')}</div>`:`<div class="pc"><h2>Your library is empty</h2><div class="sub">Open a title and choose My List</div></div>`}`};
+V.person=()=>{const p=PERSON[S.pid]||{loading:1},seg=S.opt.pseg||'Movies',l=p.loading?[]:(seg==='Movies'?p.movies:p.series);return `<div class="ttl">${p.name||S.pname||''}</div><div class="sub">${p.loading?'Loading…':p.movies.length+' movies · '+p.series.length+' series'}</div>${chips('pseg',['Movies','Series'],seg)}<div class="grid">${l.slice(0,24).map(n=>pt(n,hs(n)%360)).join('')}</div>`};
+const PERSON={};
+async function loadPerson(id){if(PERSON[id])return;PERSON[id]={loading:1};try{const [pd,cr]=await Promise.all([tm('/person/'+id),tm('/person/'+id+'/combined_credits')]);const it=(cr.cast||[]).filter(x=>x.poster_path).sort((a,b)=>b.popularity-a.popularity);it.forEach(x=>{const t=x.title||x.name;if(!REAL[t])REAL[t]={id:x.id,mt:x.media_type,p:x.poster_path,b:x.backdrop_path,r:x.vote_average||0,y:''}});PERSON[id]={name:pd.name,movies:it.filter(x=>x.media_type==='movie').map(x=>x.title),series:it.filter(x=>x.media_type==='tv').map(x=>x.name)}}catch(e){PERSON[id]={name:'Unavailable',movies:[],series:[]}}if(S.view==='person')render(true)}
+const FLAGS={
+ 'Pakistan':'linear-gradient(90deg,#fff 0 26%,#01411C 26%)','Pakistan A':'linear-gradient(90deg,#fff 0 26%,#01411C 26%)',
+ 'UAE':'linear-gradient(90deg,#d62828 0 28%,transparent 28%),linear-gradient(#00732f 0 33.3%,#fff 33.3% 66.6%,#000 66.6%)',
+ 'India':'radial-gradient(circle,#000080 0 9%,transparent 10%),linear-gradient(#ff9933 0 33.3%,#fff 33.3% 66.6%,#138808 66.6%)','India A':'radial-gradient(circle,#000080 0 9%,transparent 10%),linear-gradient(#ff9933 0 33.3%,#fff 33.3% 66.6%,#138808 66.6%)',
+ 'Nepal A':'linear-gradient(135deg,#003893 0 7%,#dc143c 7%)',
+ 'Australia':'radial-gradient(circle at 26% 28%,#fff 0 12%,transparent 13%),#012169',
+ 'England':'linear-gradient(90deg,transparent 44%,#cf142b 44% 56%,transparent 56%),linear-gradient(transparent 44%,#cf142b 44% 56%,transparent 56%),#fff',
+ 'South Africa':'linear-gradient(135deg,#007a4d 0 34%,#ffb612 34% 41%,#000 41% 50%,transparent 50%),linear-gradient(#de3831 0 50%,#002395 50%)',
+ 'Bangladesh':'radial-gradient(circle at 45% 50%,#f42a41 0 31%,transparent 32%),#006a4e',
+ 'Sri Lanka':'linear-gradient(90deg,#ffbe29 0 14%,#00534e 14% 28%,#8d153a 28%)',
+ 'New Zealand':'radial-gradient(circle at 70% 38%,#cc142b 0 6%,transparent 7%),radial-gradient(circle at 80% 62%,#cc142b 0 6%,transparent 7%),radial-gradient(circle at 62% 68%,#cc142b 0 6%,transparent 7%),#00247d',
+ 'Spain':'linear-gradient(#aa151b 0 25%,#f1bf00 25% 75%,#aa151b 75%)',
+ 'France':'linear-gradient(90deg,#0055a4 0 33.3%,#fff 33.3% 66.6%,#ef4135 66.6%)',
+ 'Türkiye':'radial-gradient(circle at 42% 50%,#fff 0 19%,transparent 20%),#e30a17',
+ 'Belgium':'linear-gradient(90deg,#000 0 33.3%,#fae042 33.3% 66.6%,#ed2939 66.6%)',
+ 'Italy':'linear-gradient(90deg,#009246 0 33.3%,#fff 33.3% 66.6%,#ce2b37 66.6%)',
+ 'Croatia':'linear-gradient(#ff0000 0 33.3%,#fff 33.3% 66.6%,#171796 66.6%)',
+ 'Czechia':'linear-gradient(135deg,#11457e 0 42%,transparent 42%),linear-gradient(#fff 0 50%,#d7141a 50%)',
+ 'Portugal':'linear-gradient(90deg,#006600 0 40%,#ff0000 40%)','Poland':'linear-gradient(#fff 0 50%,#dc143c 50%)'};
+const TEAMS={'Memphis Grizzlies':['MEM',215],'Golden State Warriors':['GSW',48],'Milwaukee Bucks':['MIL',140],'Portland Trail Blazers':['POR',0],'Minnesota Timberwolves':['MIN',205],'New York Knicks':['NYK',25],'San Antonio Spurs':['SAS',0,1],'Los Angeles Clippers':['LAC',350],'Formula 1':['F1',0,2],'MotoGP':['GP',0,3],'Abu Dhabi T10':['T10',28],'NPL':['NPL',8],'Friday Night SmackDown':['SD',212],'Monday Night Raw':['RAW',0]};
+const SPICON={Cricket:'cricket',Basketball:'basketball',Motorsports:'racing-helmet',WWE:'boxing-glove',Football:'soccer'};
+const SPORTS=['All','Basketball','Cricket','Motorsports','WWE','Football'];
+/* el = seconds on the clock for live games; hrs = hours until the start for upcoming games (Upcoming tab = next 24 h, like the original) */
+const SPORT=[
+ {id:1,sport:'Cricket',league:'Asia Cup Rising Stars',a:'Pakistan A',b:'UAE',st:'live',el:3053},
+ {id:2,sport:'Cricket',league:'ICC World Test Championship',a:'Pakistan',b:'Sri Lanka',st:'live',el:8447},
+ {id:3,sport:'Cricket',league:'ICC World Test Championship',a:'New Zealand',b:'India',st:'live',el:31847},
+ {id:4,sport:'Motorsports',league:'Formula 1',a:'Formula 1',b:'Formula 1',st:'live',el:22847},
+ {id:5,sport:'Basketball',league:'NBA',a:'Memphis Grizzlies',b:'Golden State Warriors',st:'live',el:21799},
+ {id:6,sport:'Basketball',league:'NBA',a:'Milwaukee Bucks',b:'Portland Trail Blazers',st:'live',el:21799},
+ {id:7,sport:'Basketball',league:'NBA',a:'Minnesota Timberwolves',b:'New York Knicks',st:'live',el:21799},
+ {id:8,sport:'Basketball',league:'NBA',a:'San Antonio Spurs',b:'Los Angeles Clippers',st:'live',el:21799},
+ {id:9,sport:'Football',league:'International Friendly',a:'Portugal',b:'Poland',st:'live',el:3130},
+ {id:10,sport:'Cricket',league:'Asia Cup Rising Stars',a:'India A',b:'Nepal A',st:'up',time:'04:00 PM',date:'20/11/2026',hrs:3.2},
+ {id:11,sport:'Cricket',league:'One Day International',a:'Australia',b:'England',st:'up',time:'02:15 PM',date:'21/11/2026',hrs:25.4},
+ {id:12,sport:'Cricket',league:'ICC World Test Championship',a:'South Africa',b:'Bangladesh',st:'up',time:'02:00 PM',date:'23/11/2026',hrs:73.2},
+ {id:13,sport:'Cricket',league:'Nepal Premier League, 2026',a:'NPL',b:'NPL',st:'up',time:'05:15 PM',date:'21/11/2026',hrs:28.4},
+ {id:14,sport:'Cricket',league:'Abu Dhabi T10 League, 2026',a:'Abu Dhabi T10',b:'Abu Dhabi T10',st:'up',time:'07:30 PM',date:'20/11/2026',hrs:6.7},
+ {id:15,sport:'Cricket',league:'T20 International',a:'India',b:'South Africa',st:'up',time:'07:00 PM',date:'22/11/2026',hrs:54.2},
+ {id:16,sport:'WWE',league:'Friday Night SmackDown',a:'Friday Night SmackDown',b:'Friday Night SmackDown',st:'up',time:'06:00 AM',date:'21/11/2026',hrs:17.2},
+ {id:17,sport:'WWE',league:'Monday Night Raw',a:'Monday Night Raw',b:'Monday Night Raw',st:'up',time:'06:00 AM',date:'24/11/2026',hrs:89.2},
+ {id:18,sport:'Motorsports',league:'MotoGP',a:'MotoGP',b:'MotoGP',st:'up',time:'04:45 PM',date:'20/11/2026',hrs:3.9},
+];
+const HILITES=[['Spain','England'],['France','Türkiye'],['Belgium','Italy'],['Croatia','Czechia']].map(([a,b],i)=>({id:100+i,sport:'Football',league:'UEFA Nations League',a,b,st:'hl',date:'16/11/2026'}));
+const hashS=hs;
+const inSport=sp=>SPORT.filter(m=>sp==='All'||m.sport===sp);
+const upSoon=m=>m.st==='up'&&m.hrs<24;
+const spCounts=sp=>{const l=inSport(sp);return {Recent:l.filter(m=>m.st==='live').length,Live:l.filter(m=>m.st==='live').length,Upcoming:l.filter(upSoon).length,All:l.length,Highlights:HILITES.filter(m=>sp==='All'||m.sport===sp).length}};
+const tmr=x=>[Math.floor(x/3600),Math.floor(x/60)%60,x%60].map(n=>String(n).padStart(2,'0')).join(':');
+function crest(n){const f=FLAGS[n];if(f)return `<span class="cr" style="background:${f}"></span>`;const t=TEAMS[n]||[n.split(' ').map(w=>w[0]).join('').slice(0,3).toUpperCase(),hs(n)%360];return `<span class="cr tc">${t[0]}</span>`}
+const mcard=(m,hl)=>`<div class="mcd" data-f data-go="player" data-t="${esc(m.a==m.b?m.a:m.a+' vs '+m.b)}" data-live="1"><div class="mh"><span>${m.sport} II ${m.league}</span><span class="mr">${hl?m.date:m.st==='live'?`<span class="tmc">${tmr(m.el)}</span><span class="live">LIVE</span>`:`<span class="tmc">${m.time}</span> ${m.date}`}</span></div><div class="mbd">${crest(m.a)}<span class="tn">${m.a}</span><b class="vs">VS</b><span class="tn">${m.b}</span>${crest(m.b)}</div></div>`;
+const CATS=[['News',['News 24','World News','Global Now']],['Movies',['Cinema One','Movie Max','Classics HD']],['Kids',['Kids Zone','Toon Land','Little Stars']],['Documentary',['Nature HD','Planet Earth TV','History Hub']],['Music',['Music Hub','Hits 24','Rock Radio TV']],['Entertainment',['Star Entertain','Prime Time','Reality Plus']],['Comedy',['Comedy Club','Laugh Out','Stand Up TV']],['Lifestyle',['Living Well','Food Trail','Home Style']],['Education',['Learn TV','Science Now','Code Channel']]];
+
+function sportsView(){const sp=S.opt.sp||'All',st=S.opt.st||'Recent',c=spCounts(sp);let list;
+ if(st==='Highlights')list=HILITES.filter(m=>sp==='All'||m.sport===sp);else{list=inSport(sp);if(st==='Recent'||st==='Live')list=list.filter(m=>m.st==='live');else if(st==='Upcoming')list=list.filter(upSoon);else list=list.slice().sort((x,y)=>(x.st==='live'?0:1)-(y.st==='live'?0:1))}
+ return `<div class="spr">${SPORTS.map(x=>`<div class="spc${x===sp?' on':''}" data-f data-do="opt" data-k="sp" data-v="${x}"><span class="ring"><i class="mdi mdi-${x==='All'?'view-grid-outline':SPICON[x]}"></i><b class="bdg">${spCounts(x).All}</b></span><small>${x}</small></div>`).join('')}</div>
+ <div class="sts">${['Recent','Live','Upcoming','All','Highlights'].map(t=>`<span class="${t===st?'on':''}" data-f data-do="opt" data-k="st" data-v="${t}">${t===st?'✓ ':''}${t} (${c[t]})</span>`).join('')}</div>
+ ${list.length?`<div class="mgrid">${list.map(m=>mcard(m,st==='Highlights')).join('')}</div>`:`<div class="pc"><h2>No Events Found</h2></div>`}`}
+const TITLES={home:'Home',anime:'Anime',drama:'Drama',tv:'TV',music:'Music',adult:'Adult',settings:'Settings',search:'Search'};
+function side(){$('#side').innerHTML=`<div class="logo">${SVGMARK}<span>CINETOR</span></div>`+NAV.filter(n=>n[0]!=='adult'||S.adult.on).map(([k,i,l])=>`<div class="nv${k===S.root?' on':''}" data-f data-go="${k}" data-root="1">${I(i)}<b>${l}</b></div>`).join('')}
+function render(keep){const v=S.view;S.root=S.root||'home';side();
+ if(v==='pin'){$('#main').innerHTML=pinScr()}else $('#main').innerHTML=(S.stack.length>0?`<div class="backbar"><span class="btn" data-f data-do="back">${I('arrow-left')} Back</span></div>`:'')+(V[v]?V[v]():'');
+ if(!keep||!$('.f')){const f=S.lastF[v]&&$$('[data-f]').find(e=>e.dataset.t===S.lastF[v].t&&e.textContent===S.lastF[v].x)||$$('#main [data-f]').find(e=>!e.closest('.backbar'))||$$('#main [data-f]')[0];f&&focus(f)}}
+const $$=s=>[...document.querySelectorAll(s)];
+/* ---- PIN screen (same PIN as the phone build) ---- */
+function pinScr(){const q=S.pin;return `<div class="pc"><div style="font-size:54px">${I('shield-lock-outline')}</div><h2>${q.msg||q.title}</h2><div class="dots">${[0,1,2,3].map(i=>`<i class="${i<q.buf.length?'on':''}"></i>`).join('')}</div><div class="pad">${['1','2','3','4','5','6','7','8','9','x','0','b'].map(k=>`<div class="k" data-f data-do="key" data-k="${k}">${k==='x'?'Cancel':k==='b'?I('backspace-outline'):k}</div>`).join('')}</div></div>`}
+function startPin(mode){S.pin={mode,buf:'',step:mode,msg:'',title:{enter:'Enter PIN',set:'Create a 4-digit PIN',off:'Enter PIN to turn off',chk:'Enter current PIN'}[mode]};S.back=S.view;S.view='pin';render()}
+function pinKey(k){const q=S.pin;if(k==='x'){S.view=S.back;if(q.mode==='enter'){S.view='home';S.root='home'}S.pin=null;return render()}if(k==='b'){q.buf=q.buf.slice(0,-1);return render(true)}if(q.buf.length>=4)return;q.buf+=k;render(true);if(q.buf.length<4)return;
+ setTimeout(()=>{const v=q.buf;q.buf='';q.msg='';const ok=pinH(v)===S.adult.pin;
+  if(q.mode==='enter'){if(!ok){q.msg='Wrong PIN, try again';return render()}S.adultOk=true;S.pin=null;S.view='adult';S.root='adult';return render()}
+  if(q.mode==='off'||q.mode==='chk'){if(!ok){q.msg='Wrong PIN, try again';return render()}if(q.mode==='off'){S.adult.on=false;S.adult.pin='';saveAd();S.pin=null;S.view='settings';toast('Adult section turned off');return render()}q.mode='set';q.step='set';q.title='Create a 4-digit PIN';return render()}
+  if(q.step==='set'){q.tmp=v;q.step='set2';q.title='Confirm your PIN';return render()}
+  if(v!==q.tmp){q.step='set';q.title='Create a 4-digit PIN';q.msg='PINs did not match';return render()}
+  S.adult.on=true;S.adult.pin=pinH(v);saveAd();S.pin=null;S.view='settings';toast('Adult section enabled');render()},120)}
+V.adult=()=>S.adultOk?feed('adult'):`<div class="pc"><h2>Adult section is locked</h2></div>`;
+/* ---- spatial focus ---- */
+function focus(el){$$('.f').forEach(x=>x.classList.remove('f'));if(!el)return;el.classList.add('f');el.scrollIntoView({block:'center',inline:'center'});S.lastF[S.view]={t:el.dataset.t,x:el.textContent}}
+function move(dir){const cur=$('.f')||$$('[data-f]')[0],r=cur.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let best=null,bs=1e9;
+ $$((S.view==='player'?'#player ':'')+'[data-f]').forEach(e=>{if(e===cur)return;const b=e.getBoundingClientRect();if(!b.width)return;const x=b.left+b.width/2,y=b.top+b.height/2,dx=x-cx,dy=y-cy;
+  const ok=dir==='l'?dx<-4&&Math.abs(dy)<Math.abs(dx)*1.6:dir==='r'?dx>4&&Math.abs(dy)<Math.abs(dx)*1.6:dir==='u'?dy<-4&&Math.abs(dx)<Math.abs(dy)*1.6:dy>4&&Math.abs(dx)<Math.abs(dy)*1.6;
+  if(!ok)return;const d=dir==='l'||dir==='r'?Math.abs(dx)+Math.abs(dy)*2.2:Math.abs(dy)+Math.abs(dx)*2.2;if(d<bs){bs=d;best=e}});
+ if(best)focus(best)}
+/* ---- actions ---- */
+function go(v,d){S.stack.push({view:S.view,root:S.root,cur:S.cur,season:S.season});
+ if(d.root){S.stack=[];S.root=v;S.opt.cat='All'}
+ if(v==='adult'){if(!S.adult.on){toast('Turn on Adult section in Settings first');S.stack.pop();return}S.adultOk=false;S.view='adult';return startPin('enter')}
+ S.adultOk=false;
+ if(v==='info'){S.cur=d.t;S.season=1;S.view='info';render();loadCast(d.t);return}
+ if(v==='player')return play(d);S.view=v;render()}
+function back(){if(S.view==='player')return closePlayer();if(S.view==='pin')return pinKey('x');const p=S.stack.pop();if(!p){const f=$('.f');if(f&&!f.closest('#side')){const n=$('#side .nv.on')||$('#side .nv');focus(n);return}if(S.view!=='home'){S.view='home';S.root='home';render()}return}S.view=p.view;S.root=p.root;S.cur=p.cur;S.season=p.season;S.adultOk=S.adultOk&&S.view==='adult';render()}
+async function loadCast(t){const r=REAL[t];if(!TMKEY||!r||r.cast)return;try{const d=await tm('/'+r.mt+'/'+r.id+'/credits');r.cast=d.cast.slice(0,12).map(c=>({id:c.id,n:c.name,p:c.profile_path}));if(S.view==='info'&&S.cur===t)render(true)}catch(e){}}
+function toast(m){$$('.toast').forEach(x=>x.remove());const d=document.createElement('div');d.className='toast';d.textContent=m;$('#tv').appendChild(d);setTimeout(()=>d.remove(),1800)}
+/* ---- player ---- */
+const fmt=x=>{x=Math.floor(x);return Math.floor(x/60)+':'+String(x%60).padStart(2,'0')};
+function play(d){try{const el=document.documentElement;if(el.requestFullscreen&&!document.fullscreenElement)el.requestFullscreen().catch(()=>{})}catch(e){}
+const ser=S.ser[d.t]||{};S.pl={t:d.t,h:hs(d.t)%360,live:!!d.live,s:+d.s||S.season||1,e:+d.e||1,pos:0,dur:2880,on:true,q:ser.q||1080,sub:ser.sub||'Off',audio:ser.audio||'Original',menu:null};S.view='player';drawPlayer();hideT()}
+function closePlayer(){try{if(document.fullscreenElement)document.exitFullscreen()}catch(e){}
+$('#player')&&$('#player').remove();S.view=S.cur?'info':'home';if(!S.cur||S.pl.live)S.view=S.root||'home';S.pl=null;render(true)}
+let hT;function hideT(){const p=$('#player');if(!p)return;p.classList.remove('hide');clearTimeout(hT);hT=setTimeout(()=>{if(S.pl&&!S.pl.menu)p.classList.add('hide')},4000)}
+function drawPlayer(){const p=S.pl;let el=$('#player');if(!el){el=document.createElement('div');el.id='player';$('#tv').appendChild(el)}el.style.setProperty('--h',p.h);
+ const sr=!p.live&&!(REAL[p.t]&&REAL[p.t].mt==='movie');
+ el.innerHTML=`<div class="ui"><div class="ptop"><div class="pb" data-f data-do="pback">${I('arrow-left')}</div><div class="g">${p.t}${p.live?'':` <small style="color:var(--dim);font-size:16px"> S${p.s} · E${p.e}</small>`}</div><div class="pb" data-f data-do="pmenu" data-m="q">HD</div></div>
+ <div class="pmid"><div class="pb" data-f data-do="seek" data-d="-10">${I('rewind-10')}</div><div class="pb big" data-f data-do="ptoggle">${I(p.on?'pause':'play')}</div><div class="pb" data-f data-do="seek" data-d="10">${I('fast-forward-10')}</div></div>
+ <div class="pbot"><div class="row2"><div class="pb" data-f data-do="pmenu" data-m="sub">${I('subtitles-outline')}</div><div class="pb" data-f data-do="pmenu" data-m="audio">${I('waveform')}</div>${sr?`<div class="pb" data-f data-do="pmenu" data-m="eps">${I('playlist-play')}</div><div class="pb" data-f data-do="pprev">${I('skip-previous')}</div><div class="pb" data-f data-do="pnext">${I('skip-next')}</div>`:''}</div>
+ <div class="seek" data-f data-do="seekbar"><b id="pbar" style="width:${p.pos/p.dur*100}%"></b></div><div class="tm"><span id="pt">${p.live?'LIVE':fmt(p.pos)}</span><span>${p.live?'':fmt(p.dur)}</span></div></div></div>${p.menu?menuHtml():''}`;
+ focus($('#player [data-do="ptoggle"]'))}
+function menuHtml(){const p=S.pl,m=p.menu,L2={q:[2160,1080,720,480,360].map(x=>[x+'p','q',x]),sub:['Off','English','Deutsch','Bangla','Japanese','Chinese','Hindi','Spanish'].flatMap(x=>x==='Off'?[[x,'sub',x]]:[[x,'sub',x],[x+'  (generate on device)','gen',x]]),audio:['Original','English dub','Hindi dub','Bangla dub'].map(x=>[x,'audio',x]),eps:[1,2,3,4,5,6].map(x=>['Episode '+x,'ep',x])}[m];
+ return `<div class="menu">${L2.map(([l,k,v])=>`<div data-f data-do="pick" data-k="${k}" data-v="${v}"><span>${l}</span>${(p[k]==v||(k==='ep'&&p.e==v))?I('check'):''}</div>`).join('')}</div>`}
+setInterval(()=>{const p=S.pl;if(!p||!p.on||p.live)return;p.pos+=1;S.watch[p.t+'|'+p.s+'|'+p.e]=p.pos/p.dur;if(p.pos>=p.dur){p.e=Math.min(6,p.e+1);p.pos=0;drawPlayer()}const b=$('#pbar');if(b){b.style.width=p.pos/p.dur*100+'%';$('#pt').textContent=fmt(p.pos)}},1000);
+/* ---- input ---- */
+function act(el){if(!el)return;const d=el.dataset;
+ if(d.go)return go(d.go,{t:d.t,live:d.live,root:d.root,s:d.s,e:d.e});
+ switch(d.do){
+  case 'seeall':S.stack.push({view:S.view,root:S.root,cur:S.cur,season:S.season});S.lid=d.lid;S.view='list';render();break;
+  case 'back':back();break;
+  case 'cwclear':S.cw=[];render();toast('Continue watching cleared');break;
+  case 'cwrm':S.cw.splice(+d.i,1);render(true);break;
+  case 'person':S.stack.push({view:S.view,root:S.root,cur:S.cur,season:S.season});S.pid=d.pid;S.pname=d.t;S.view='person';loadPerson(d.pid);render();break;
+  case 'opt':S.opt[d.k]=d.v;render();break;
+  case 'lib':S.saved[d.t]=!S.saved[d.t];render(true);toast(S.saved[d.t]?'Added to My List':'Removed');break;
+  case 'season':S.season=+d.v;render(true);break;
+  case 'toast':toast(d.m);break;
+  case 'adultset':S.adult.on?startPin('off'):startPin('set');break;
+  case 'pinchg':startPin('chk');break;
+  case 'key':pinKey(d.k);break;
+  case 'pback':closePlayer();break;
+  case 'ptoggle':S.pl.on=!S.pl.on;drawPlayer();break;
+  case 'seek':S.pl.pos=Math.max(0,Math.min(S.pl.dur,S.pl.pos+ +d.d));drawPlayer();break;
+  case 'seekbar':break;
+  case 'pnext':if(S.pl.e<6)S.pl.e++;else if(S.pl.s<3){S.pl.s++;S.pl.e=1}S.pl.pos=0;drawPlayer();break;
+  case 'pprev':if(S.pl.e>1)S.pl.e--;else if(S.pl.s>1){S.pl.s--;S.pl.e=6}S.pl.pos=0;drawPlayer();break;
+  case 'pmenu':S.pl.menu=d.m;drawPlayer();focus($('#player .menu [data-f]'));break;
+  case 'pick':{const p=S.pl;if(d.k==='gen'){p.menu=null;drawPlayer();toast('Generating '+d.v+' subtitles on this device…');setTimeout(()=>{p.sub=d.v;S.ser[p.t]={q:p.q,sub:p.sub,audio:p.audio};drawPlayer();toast(d.v+' subtitles ready')},1600);break}if(d.k==='ep'){p.e=+d.v;p.pos=0}else p[d.k]=isNaN(+d.v)?d.v:+d.v;p.menu=null;S.ser[p.t]={q:p.q,sub:p.sub,audio:p.audio};drawPlayer();toast(d.k==='ep'?'Episode '+d.v:'Settings apply to the whole series');break}}
+}
+const KC={4:'Escape',8:'Backspace',27:'Escape',461:'Escape',10009:'Escape',23:'Enter',13:'Enter',66:'Enter',19:'ArrowUp',20:'ArrowDown',21:'ArrowLeft',22:'ArrowRight',37:'ArrowLeft',38:'ArrowUp',39:'ArrowRight',40:'ArrowDown',85:'MediaPlayPause',179:'MediaPlayPause',415:'MediaPlayPause',89:'MediaRewind',412:'MediaRewind',90:'MediaFastForward',417:'MediaFastForward'};
+function normKey(e){if(/^(GoBack|BrowserBack|XF86Back|Back)$/.test(e.key))return'Escape';if(e.key==='MediaTrackPrevious')return'MediaRewind';if(e.key==='MediaTrackNext')return'MediaFastForward';if(e.key==='Unidentified'||!e.key||e.key==='Dead')return KC[e.keyCode]||e.key;return KC[e.keyCode]&&e.key.length>1&&!/^Arrow|Enter|Escape|Backspace|Media/.test(e.key)?KC[e.keyCode]:e.key}
+addEventListener('keydown',e=>{const k=normKey(e);if((k==='Delete'||k==='x')&&S.view==='home'){const f=$('.f');if(f&&f.dataset.cw!==undefined){S.cw.splice(+f.dataset.cw,1);render(true);toast('Removed from Continue watching');return}}
+ if(S.view==='player'){hideT();const f=$('.f');
+  if(S.pl.menu&&k==='Escape'||S.pl.menu&&k==='Backspace'){S.pl.menu=null;drawPlayer();e.preventDefault();return}
+  if(f&&f.dataset.do==='seekbar'&&(k==='ArrowLeft'||k==='ArrowRight')){S.pl.pos=Math.max(0,Math.min(S.pl.dur,S.pl.pos+(k==='ArrowLeft'?-10:10)));drawPlayer();focus($('#player .seek'));e.preventDefault();return}
+  if(k==='MediaPlayPause'||k===' '&&!f){S.pl.on=!S.pl.on;drawPlayer();return}
+  if(k==='MediaRewind'||k==='MediaFastForward'){S.pl.pos=Math.max(0,Math.min(S.pl.dur,S.pl.pos+(k==='MediaRewind'?-10:10)));drawPlayer();return}}
+ const m={ArrowLeft:'l',ArrowRight:'r',ArrowUp:'u',ArrowDown:'d'}[k];
+ if(m){e.preventDefault();move(m)}
+ else if(k==='Enter'||k===' '){e.preventDefault();act($('.f'))}
+ else if(k==='Escape'||k==='Backspace'||k==='BrowserBack'){e.preventDefault();back()}});
+document.addEventListener('click',e=>{const t=e.target.closest('[data-f]');if(t){focus(t);act(t)}});
+document.addEventListener('mousemove',()=>{if(S.view==='player')hideT()});
+/* ---- boot with splash ---- */
+render();loadTm();
+const sp=document.createElement('div');sp.id='splash';sp.innerHTML=`<div>${SVGMARK}<h1><b>CINE</b>TOR</h1><small>Developed by Mythbrix</small></div>`;$('#tv').appendChild(sp);setTimeout(()=>sp.remove(),1400);
+</script></body></html>
