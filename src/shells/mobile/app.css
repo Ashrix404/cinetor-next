@@ -722,14 +722,13 @@ a{color:inherit}
 .delopt .mi{font-size:22px;color:var(--primary);flex:none}
 .delopt b{display:block;font-size:15px}.delopt small{display:block;color:var(--on-var);font-size:12px;margin-top:2px}
 
-/* gesture pill (seek preview / 2x / brightness / volume), error + server switcher */
+/* gesture pill (seek preview / 2x / brightness / volume), error card */
 .lvl.gp{top:14%;gap:8px;padding:8px 16px;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
 .lvl.gp b{font-weight:600;font-variant-numeric:tabular-nums}.lvl.gp small{font-size:12px;opacity:.7}
 .vg-err{position:absolute;inset:0;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:16px;color:rgba(255,255,255,.9);font-size:14px;background:#05060a}
 .vg-err>.mi{font-size:38px;opacity:.8}
 .vg-err>div{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-.vg-err b,.vg-slow{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;background:rgba(255,255,255,.14);font-size:13px;font-weight:600;color:#fff}
-.vg-slow{font-weight:500;font-size:12px;background:rgba(255,255,255,.1)}
+.vg-err b{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;background:rgba(255,255,255,.14);font-size:13px;font-weight:600;color:#fff}
 /* download sheet always above the floating nav; footer (selected count + Download) never clipped */
 .sheet.dlsheet{z-index:60}
 .sheet.dlsheet .dlf{position:static;margin:10px 0 0;padding:10px 0 0;border-top:1px solid rgba(255,255,255,.08);background:transparent;flex:none}
@@ -755,8 +754,6 @@ a{color:inherit}
 html.lg .pl .pi,html.lg .pl .ibtn{background:linear-gradient(135deg,rgba(255,255,255,.22),rgba(255,255,255,.06) 55%,rgba(255,255,255,.12));-webkit-backdrop-filter:blur(12px) saturate(150%);backdrop-filter:blur(12px) saturate(150%);box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 6px 16px rgba(0,0,0,.28)}
 .pl.c .big{box-shadow:0 8px 24px rgba(0,0,0,.45)}
 .pl.c .sk{width:44px;height:44px;border-radius:50%}
-.pi.srvpi{gap:5px;display:inline-flex!important;align-items:center;font-size:16px}
-.pi.srvpi small{font-size:11px;font-weight:500;white-space:nowrap}
 /* seek track: 4 px line, rounded, with a 28 px tall invisible hit area */
 .seek .trk{cursor:pointer}
 .seek .trk::before{content:"";position:absolute;left:0;right:0;top:-12px;bottom:-12px}

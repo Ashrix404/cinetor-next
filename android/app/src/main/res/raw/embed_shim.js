@@ -87,6 +87,13 @@
     }
   }, true);
 
+  // first sign of life of the player page itself (not of its ads): the app drops its loader
+  document.addEventListener('DOMContentLoaded', function () {
+    try {
+      if (window.parent === window.top) report('ready');
+    } catch (e) {}
+  });
+
   var played = false;
   document.addEventListener('playing', function (e) {
     var v = e.target;

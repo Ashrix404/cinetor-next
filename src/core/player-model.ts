@@ -16,7 +16,6 @@ export interface PlayerState {
   fit: Fit; locked: boolean; bgPlay: boolean;
   mode: 'inline' | 'fullscreen' | 'pip';
   audioDelayMs: number; subDelayMs: number; hwDecoder: boolean;
-  server: number;
 }
 
 /** Season layout: episodes per season (index 0 = season 1). Mock default: 3 × 6. */
@@ -26,7 +25,7 @@ export const MOCK_SEASONS: Seasons = [6, 6, 6];
 export function initialState(p: Partial<PlayerState> & Pick<PlayerState, 'titleId' | 'title' | 'mediaType'>): PlayerState {
   return {
     season: 1, episode: 1, pos: 0, dur: 120, playing: true, speed: 1, quality: 1080, audio: 'OG', sub: 'Off',
-    fit: 'Fit', locked: false, bgPlay: false, mode: 'inline', audioDelayMs: 0, subDelayMs: 0, hwDecoder: true, server: 1,
+    fit: 'Fit', locked: false, bgPlay: false, mode: 'inline', audioDelayMs: 0, subDelayMs: 0, hwDecoder: true,
     ...p,
   };
 }

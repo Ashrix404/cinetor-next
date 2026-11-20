@@ -44,6 +44,6 @@ describe('desktop shell smoke', () => {
     await act(() => st.setUi({ reader: null }));
     await act(() => pl.play(t, 1, 1));
     await flush();
-    expect(root.querySelector('.pl video, .pl iframe')).not.toBeNull(); // video, or an embed server when no direct file exists
+    expect(root.querySelector('.pl video, .pl iframe')).not.toBeNull(); // video, or an embed player when no direct file exists
   }, 30000);
 });

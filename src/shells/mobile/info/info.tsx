@@ -69,7 +69,7 @@ function InlinePlayer() {
     }),
   ).current;
   const hasEmbed = !!useStoreC(pl).embedUrl;
-  // Embed servers get the touches themselves (touch-action auto, no tap handler); the bar never hides.
+  // Embed players get the touches themselves (touch-action auto, no tap handler); the bar never hides.
   return (
     <div class={'ivp' + (controlsHidden(c.hidden, hasEmbed) ? ' ctlhide' : '')} ref={ref} style={`--h:${pl.get().hue};touch-action:${hasEmbed ? 'auto' : 'none'}`} onClick={hasEmbed ? undefined : (e) => !gs.suppressed() && onPlayerTap(e)} onPointerDown={gs.down} onPointerMove={gs.move} onPointerUp={gs.up} onPointerCancel={gs.cancel} onContextMenu={gs.menu}>
       <Vcore land={false} onFs={fs} />

@@ -14,27 +14,44 @@ import { Ic, Sv } from './ui';
 import { fetchStream } from '../../core/stream-resolver';
 import { LIVE_ALL } from '../../core/live';
 import { controlsHidden, desktopTapAction } from '../../core/player-gesture';
+import { playDirect } from '../../core/direct-play';
+import { EmbedSession, ERR_NONE } from '../../core/embed-session';
+import { sandboxFor, type Embed } from '../../core/embeds';
 
-
-
-interface DPl { on: boolean; title: Title | null; live: string; st: PlayerState; seasons: Seasons; pip: boolean; local?: string | null; embedUrl?: string | null; loading?: boolean; servers?: string[]; srv?: number }
+interface DPl { on: boolean; title: Title | null; live: string; st: PlayerState; seasons: Seasons; pip: boolean; local?: string | null; embedUrl?: string | null; loading?: boolean; embeds?: Embed[] }
 export const dpl = createStore<DPl>('d-pl', { on: false, title: null, live: '', st: initialState({ titleId: 0, title: '', mediaType: 'movie' }), seasons: MOCK_SEASONS, pip: false, embedUrl: null, loading: false }, false);
 
 export function play(t: Title, season = 1, episode = 1, seasons?: Seasons, local?: string) {
   const m = series.load(t.id), k = dpl.get().st;
-  dpl.set({ on: true, pip: false, local: local || null, title: t, live: '', seasons: seasons || dpl.get().seasons, embedUrl: null, servers: [], srv: 0, loading: !local, st: initialState({ titleId: t.id, title: t.title, mediaType: t.mediaType, season, episode, quality: m.quality, audio: m.audio, sub: m.sub, speed: k.speed, fit: k.fit }) });
+  dpl.set({ on: true, pip: false, local: local || null, title: t, live: '', seasons: seasons || dpl.get().seasons, embedUrl: null, embeds: [], loading: !local, st: initialState({ titleId: t.id, title: t.title, mediaType: t.mediaType, season, episode, quality: m.quality, audio: m.audio, sub: m.sub, speed: k.speed, fit: k.fit }) });
 }
+// Embed players of the current title + automatic failover (core/embed-session.ts, same rules as mobile).
+let session: EmbedSession | null = null;
+let resolveKey = '';
+if (typeof addEventListener === 'function') addEventListener('message', (e: MessageEvent) => session?.message(e.data));
+function startEmbeds(list: Embed[]) {
+  session?.stop();
+  session = new EmbedSession(list, (v) => {
+    dpl.set({ embedUrl: v.embedUrl, loading: v.loading });
+    if (v.err) toast(v.err);
+  });
+  session.start(0);
+}
+function stopEmbeds() {
+  session?.stop();
+  session = null;
+}
+
 export function playLive(label: string) {
-  dpl.set({ on: true, pip: false, local: null, title: null, live: label, embedUrl: null, servers: [], srv: 0, loading: false, st: initialState({ titleId: -1, title: label, mediaType: 'live', quality: 720 }) });
+  dpl.set({ on: true, pip: false, local: null, title: null, live: label, embedUrl: null, embeds: [], loading: false, st: initialState({ titleId: -1, title: label, mediaType: 'live', quality: 720 }) });
 }
 
 const cues = new Map<string, Cue[]>();
-type Menu = 'q' | 'sub' | 'audio' | 'eps' | 'server' | 'more' | null;
+type Menu = 'q' | 'sub' | 'audio' | 'eps' | 'more' | null;
 
 export function Player() {
   const s = useStore(dpl), st = s.st;
   const v = useRef<HTMLVideoElement>(null);
-  const [iframeLoaded, setIframeLoaded] = useState(false);
   const [hide, setHide] = useState(false);
   const [menu, setMenu] = useState<Menu>(null);
   const [pos, setPos] = useState(0);
@@ -51,6 +68,8 @@ export function Player() {
   const close = () => {
     const el = v.current;
     if (el) cancelPlay(el); // stops hls.js too and releases the decoder
+    stopEmbeds();
+    resolveKey = '';
     dpl.set({ on: false, pip: false, embedUrl: null, loading: false });
   };
   const bump = () => {
@@ -62,6 +81,8 @@ export function Player() {
     const el = v.current;
     if (!el) return;
 
+    stopEmbeds();
+    resolveKey = '';
     if (s.live) {
       // desktop Chrome/Firefox have no native HLS: playUrl picks native, hls.js or hls.js via the gateway proxy
       const channel = pickChannel(s.live, LIVE_ALL);
@@ -82,14 +103,22 @@ export function Player() {
     }
 
     if (s.title) {
+      const key = `${s.title.id}:${st.season}:${st.episode}`;
+      resolveKey = key;
+      cancelPlay(el);
+      dpl.set({ loading: true, embedUrl: null, embeds: [] });
       void fetchStream(s.title.id, s.title.title, s.title.mediaType, st.season, st.episode).then((res) => {
-        dpl.set({ loading: false, servers: res?.embeds || [], srv: 0 });
-        if (res?.url && el) {
-          el.src = res.url;
-          if (st.playing) el.play().catch(() => {});
-          return;
-        }
-        if (res?.embedUrl) dpl.set({ embedUrl: res.embedUrl });
+        if (resolveKey !== key) return;
+        if (!res) return (dpl.set({ loading: false }), toast('Could not load this title. Check your connection.'));
+        dpl.set({ embeds: res.embeds });
+        const embeds = () => (res.embeds.length ? startEmbeds(res.embeds) : (dpl.set({ loading: false }), toast(ERR_NONE)));
+        if (!res.direct.length) return embeds();
+        // real media files first (v2 path), then the embed players
+        const at = library.progress(st.titleId, st.season, st.episode) * 120;
+        playDirect(el, res.direct, { at, alive: () => resolveKey === key }).then(
+          () => (dpl.set({ loading: false }), dpl.get().st.playing ? undefined : el.pause()),
+          (e: Error) => e.message !== 'cancelled' && resolveKey === key && embeds()
+        );
       });
     }
   }, [st.titleId, st.season, st.episode, s.live]);
@@ -143,9 +172,6 @@ export function Player() {
     sub: [['Off', () => save({ sub: 'Off' }), st.sub === 'Off'], ...LANGS.flatMap(([c, n]): [string, () => void, boolean][] => (cues.has(c) ? [[n, () => save({ sub: c }), st.sub === c]] : [[n + ' · generate on device', () => startGen(c), false]]))],
     audio: [['Original', 'OG'], ['English dub', 'EN'], ['Hindi dub', 'HI'], ['Bangla dub', 'BN']].map(([l, c]) => [l, () => save({ audio: c }), st.audio === c]),
     eps: Array.from({ length: s.seasons[st.season - 1] || 6 }, (_, i): [string, () => void, boolean] => ['Season ' + st.season + ' · Episode ' + (i + 1), () => save({ episode: i + 1 }), st.episode === i + 1]),
-    server: s.servers?.length
-      ? s.servers.map((u, i): [string, () => void, boolean] => ['Server ' + (i + 1), () => pickServer(i), !!s.embedUrl && s.srv === i])
-      : [1, 2, 3].map((n) => ['Server ' + n, () => set({ server: n }), st.server === n]),
     more: [
       ['Audio delay −100 ms', () => set({ audioDelayMs: st.audioDelayMs - 100 }), false], ['Audio delay +100 ms (' + st.audioDelayMs + ')', () => set({ audioDelayMs: st.audioDelayMs + 100 }), false],
       ['Subtitle delay −100 ms', () => set({ subDelayMs: st.subDelayMs - 100 }), false], ['Subtitle delay +100 ms (' + st.subDelayMs + ')', () => set({ subDelayMs: st.subDelayMs + 100 }), false],
@@ -166,16 +192,8 @@ export function Player() {
     if (hide) bump();
     else (clearTimeout(tmr.current), setHide(true));
   };
-  const pickServer = (i: number) => {
-    const u = dpl.get().servers?.[i];
-    if (!u) return;
-    v.current?.pause();
-    dpl.set({ srv: i, embedUrl: u, loading: false });
-  };
-  const nextSrv = () => pickServer(((s.srv || 0) + 1) % Math.max(1, s.servers?.length || 1));
   const fullscreen = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.())?.catch?.(() => {});
 
-  useEffect(() => { setIframeLoaded(false); }, [s.embedUrl]);
   const bgImg = s.title?.backdrop ? `url(${img(s.title.backdrop, 'w1280')})` : undefined;
   const pipStyle = s.pip ? 'inset:auto;right:20px;bottom:20px;width:360px;height:203px;border-radius:14px;box-shadow:0 14px 36px rgba(0,0,0,.7)' : '';
   return (
@@ -185,13 +203,16 @@ export function Player() {
         {s.embedUrl ? (
           <>
             <iframe
+              key={s.embedUrl}
               src={s.embedUrl}
               style="width:100%;height:100%;border:none;position:absolute;inset:0;"
               allowFullScreen
               allow="autoplay *; encrypted-media *; fullscreen *; picture-in-picture *"
-              onLoad={() => setIframeLoaded(true)}
+              sandbox={sandboxFor(s.embedUrl, false)}
+              onLoad={() => session?.loaded()}
             />
-            {!iframeLoaded && (
+            {/* one loader, owned by the embed session */}
+            {s.loading && (
               <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#05060a;z-index:3;gap:12px;pointer-events:none;">
                 <div style="width:48px;height:48px;border:3.5px solid rgba(255,255,255,0.15);border-top-color:#38bdf8;border-right-color:#38bdf8;border-radius:50%;animation:spin 0.8s linear infinite;box-shadow:0 0 20px rgba(56,189,248,0.35);" />
                 <span style="font-size:13px;color:rgba(255,255,255,0.8);font-weight:500;letter-spacing:0.3px;">Loading stream…</span>
@@ -199,9 +220,9 @@ export function Player() {
             )}
           </>
         ) : null}
-        {/* always mounted so the ref survives a switch to an embed server */}
+        {/* always mounted so the ref survives a switch to an embed player */}
         <video ref={v} playsInline style={s.embedUrl ? 'display:none' : undefined} onTimeUpdate={timeUpd} onLoadedMetadata={() => setDur(v.current!.duration)} onEnded={() => (series2 ? ep(nextR) : set({ playing: false }))} />
-        {s.loading && (
+        {s.loading && !s.embedUrl && (
           <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(5,6,10,0.85);z-index:3;gap:12px;pointer-events:none;">
             <div style="width:48px;height:48px;border:3.5px solid rgba(255,255,255,0.15);border-top-color:#38bdf8;border-right-color:#38bdf8;border-radius:50%;animation:spin 0.8s linear infinite;box-shadow:0 0 20px rgba(56,189,248,0.35);" />
             <span style="font-size:13px;color:rgba(255,255,255,0.8);font-weight:500;letter-spacing:0.3px;">Loading stream…</span>
@@ -210,12 +231,11 @@ export function Player() {
       </div>
       {c && !st.locked && <div class="psub" style={css.pos}><span style={css.span}>{c.text}</span></div>}
       {s.embedUrl ? (
-        // the iframe gets every click: this bar never hides (Back, Server switch, Fullscreen)
+        // the iframe gets every click: this bar never hides (Back, Fullscreen)
         <div class="ui embed">
           <div class="pt1">
             <button class="pb" title="Back" onClick={close}><Ic n="arrow-left" /></button>
             <div class="gr">{s.live || st.title} {!s.live && st.mediaType === 'tv' && <small> S{st.season} · E{st.episode}</small>}</div>
-            {(s.servers?.length || 0) > 1 && <button class="pb srv" title="Switch server" onClick={nextSrv}><Ic n="server" /> Server {(s.srv || 0) + 1}/{s.servers!.length}</button>}
             <button class="pb" title="Fullscreen" onClick={fullscreen}><Ic n="fullscreen" /></button>
           </div>
         </div>
@@ -248,7 +268,6 @@ export function Player() {
               <button class="pb" onClick={() => setMenu('sub')}><Ic n={st.sub === 'Off' ? 'subtitles-outline' : 'subtitles'} /></button>
               <button class="pb" onClick={() => setMenu('audio')}><Ic n="waveform" /></button>
               <button class={'pb' + (st.fit !== 'Fit' ? ' on' : '')} title="Resize" onClick={() => set({ fit: cycleFit(st).fit })}><Ic n="aspect-ratio" /></button>
-              <button class="pb" title="Server" onClick={() => setMenu('server')}><Ic n="server" /></button>
               {series2 && <><button class="pb" onClick={() => setMenu('eps')}><Ic n="playlist-play" /></button><button class="pb" onClick={() => ep(prevR)}><Ic n="skip-previous" /></button><button class="pb" onClick={() => ep(nextR)}><Ic n="skip-next" /></button></>}
             </div>
             <div class="sk" onClick={(e) => {

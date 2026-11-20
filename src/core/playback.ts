@@ -73,12 +73,12 @@ export function loadHlsJs(): Promise<HlsCtor> {
 
 /** hls.js loader class that sends every request through the gateway proxy but keeps the real URL
  * as the base, so relative segment paths still resolve against the stream's host. */
-function proxyLoader(Hls: HlsCtor) {
+function proxyLoader(Hls: HlsCtor, referer?: string) {
   const Base = Hls.DefaultConfig.loader;
   return class extends Base {
     load(ctx: any, cfg: any, cb: any) {
       const orig = ctx.url;
-      ctx.url = proxify(orig, undefined, !!ctx.type || isHlsUrl(orig));
+      ctx.url = proxify(orig, referer, !!ctx.type || isHlsUrl(orig));
       const ok = cb.onSuccess;
       cb.onSuccess = (r: any, st: any, c: any, n: any) => {
         r.url = orig;
@@ -140,13 +140,13 @@ function waitFrames(v: HTMLVideoElement, ms: number, onFatal: (cb: (e: Error) =>
 let token = 0;
 /**
  * Play `url` in `v`, trying each engine in order with a timeout. Resolves with the engine that
- * produced frames; rejects when every engine failed (caller shows the error card / next server).
+ * produced frames; rejects when every engine failed (caller shows the error card / next embed player).
  * A newer call cancels an older one (its promise rejects with 'cancelled').
  */
 export async function playUrl(
   v: HTMLVideoElement,
   url: string,
-  o: { at?: number; timeoutMs?: number; autoplay?: boolean } = {}
+  o: { at?: number; timeoutMs?: number; autoplay?: boolean; referer?: string } = {}
 ): Promise<Engine> {
   const my = ++token;
   const ms = o.timeoutMs ?? 15000;
@@ -162,7 +162,7 @@ export async function playUrl(
         const Hls = await loadHlsJs();
         if (my !== token) throw new Error('cancelled');
         if (!Hls.isSupported()) throw new Error('hls.js unsupported');
-        hls = new Hls(eng === 'hls-proxy' ? { loader: proxyLoader(Hls), enableWorker: true } : { enableWorker: true });
+        hls = new Hls(eng === 'hls-proxy' ? { loader: proxyLoader(Hls, o.referer), enableWorker: true } : { enableWorker: true });
         hls.on(Hls.Events.ERROR, (_e: unknown, d: any) => d?.fatal && fatal(new Error('hls ' + d.details)));
         hls.loadSource(url);
         hls.attachMedia(v);

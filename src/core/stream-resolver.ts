@@ -1,17 +1,18 @@
 import { GATEWAY_BASE } from './config';
-import { buildServers, timeoutSignal, type Server } from './embeds';
+import { buildEmbeds, timeoutSignal, type Embed } from './embeds';
+import { onMobileData, rankSources, toMediaSrc, type MediaSrc } from './sources';
 
 export interface ResolvedStream {
-  /** direct media file ('' when only embed pages exist) */
+  /** best direct media file ('' when only embed pages exist) = direct[0].url */
   url: string;
+  /** every real media file (+ the headers its CDN wants), best first (v2 ranking + LinkHealth) */
+  direct: MediaSrc[];
   quality: number;
   slug?: string;
   webPlayUrl?: string;
   embedUrl?: string;
-  /** every embed page (gateway + verified extra players), best first (server switcher) */
-  embeds: string[];
-  /** the same embed pages with display names */
-  servers: Server[];
+  /** every embed player page (gateway + verified extra players), best first (automatic failover) */
+  embeds: Embed[];
   sources: { name: string; quality: number; url: string; type: string; headers?: Record<string, string> }[];
   subtitles: { lang: string; url: string; format: string }[];
 }
@@ -23,26 +24,26 @@ export const isDirectMedia = (u: string, flag?: boolean) => flag === true || DIR
 // In-memory session cache for instant playback on repeat taps (<5ms)
 const streamCache = new Map<string, ResolvedStream>();
 
-/** Turn a gateway response into direct media (url) + embed pages (embeds), best first. */
+/** Turn a gateway response into direct media (direct, url) + embed player pages (embeds), best first. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw gateway JSON, validated field by field
 export function parseResolve(data: any, ctx?: { type: string; id: number | string; season?: number; episode?: number }): ResolvedStream | null {
   const sources: ResolvedStream['sources'] = Array.isArray(data?.sources) ? data.sources : [];
-  const direct = sources.find((x: any) => x?.url && isDirectMedia(x.url, x.isDirect));
-  const embeds: string[] = [];
-  const add = (u?: string) => u && !isDirectMedia(u) && !embeds.includes(u) && embeds.push(u);
+  const ranked = rankSources(sources.map((x) => toMediaSrc(x, isDirectMedia)).filter((x): x is MediaSrc => !!x), { mobile: onMobileData() });
+  const direct = ranked[0];
+  const pages: string[] = [];
+  const add = (u?: string) => u && !isDirectMedia(u) && !pages.includes(u) && pages.push(u);
   add(data?.embedUrl);
   sources.forEach((x) => (x?.url && !isDirectMedia(x.url, (x as any).isDirect) ? add(x.url) : 0));
-  const servers = ctx ? buildServers(embeds, ctx.type, ctx.id, ctx.season, ctx.episode) : embeds.map((url, i) => ({ name: 'Server ' + (i + 1), url }));
-  if (!direct && !servers.length) return null;
-  const named = servers.map((x) => ({ ...x, name: sources.find((y) => y.url === x.url && y.name)?.name.replace(/\s*\(.*?\)|\s*Server \d+|\s*Fast HD Stream/g, '').trim() || x.name }));
+  const embeds = ctx ? buildEmbeds(pages, ctx.type, ctx.id, ctx.season, ctx.episode) : pages.map((url) => ({ url }));
+  if (!direct && !embeds.length) return null;
   return {
     url: direct?.url || '',
+    direct: ranked,
     quality: direct?.quality || sources[0]?.quality || 1080,
     slug: data?.slug,
     webPlayUrl: data?.webPlayUrl,
-    embedUrl: named[0]?.url,
-    embeds: named.map((x) => x.url),
-    servers: named,
+    embedUrl: embeds[0]?.url,
+    embeds,
     sources,
     subtitles: Array.isArray(data?.subtitles) ? data.subtitles.filter((x: { url?: string }) => x?.url) : [],
   };
@@ -77,7 +78,7 @@ export async function fetchStream(
       /* retry once */
     }
   }
-  // gateway unreachable: the embed players do not need it, so still offer them (never a dead end)
+  // gateway unreachable: the embed players do not need it, so still use them (never a dead end)
   const fallback = parseResolve({ sources: [] }, { type, id: titleId, season, episode });
   if (fallback) streamCache.set(cacheKey, fallback);
   return fallback;

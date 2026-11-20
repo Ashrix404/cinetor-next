@@ -8,7 +8,10 @@ import { isNative } from '../../../core/platform';
 import { fetchStream } from '../../../core/stream-resolver';
 import { pickChannel } from '../../../core/live';
 import { cancelPlay, playUrl } from '../../../core/playback';
-import { nextUntried, reachable } from '../../../core/embeds';
+import { playDirect } from '../../../core/direct-play';
+import type { MediaSrc } from '../../../core/sources';
+import { EmbedSession, ERR_NONE } from '../../../core/embed-session';
+import type { Embed } from '../../../core/embeds';
 
 export interface Pl {
   active: boolean;
@@ -28,9 +31,9 @@ export interface Pl {
   /** set when playing a downloaded file (offline) */
   local: string | null;
   embedUrl: string | null;
-  /** every embed server the gateway offers + the one in use */
-  servers: { name: string; url: string }[];
-  srv: number;
+  /** every embed player for the title (automatic failover, never shown) + the one in use */
+  embeds: Embed[];
+  alt: number;
   /** set when nothing could be played (never leave a black screen) */
   err: string | null;
   loading: boolean;
@@ -38,7 +41,7 @@ export interface Pl {
 export const pl = createStore<Pl>('pl', {
   active: false, pip: false, px: null, py: null, live: false, hue: 215, title: null, label: '',
   st: initialState({ titleId: 0, title: '', mediaType: 'movie' }), seasons: MOCK_SEASONS, tracks: {}, gen: null, local: null,
-  embedUrl: null, servers: [], srv: 0, err: null, loading: false
+  embedUrl: null, embeds: [], alt: 0, err: null, loading: false
 }, false);
 /** Position ticks live in their own store so only the seek bar re-renders. */
 export const ptime = createStore('ptime', { pos: 0, dur: 0 }, false);
@@ -90,8 +93,8 @@ export function getVideo(): HTMLVideoElement {
     if (starting || !v.getAttribute('src')) return; // start-up errors are handled by playUrl; '' = cleared on purpose
     const s = pl.get();
     if (s.live || s.local) return pl.set({ loading: false, err: s.live ? 'This channel stopped. Tap Retry.' : 'This file could not be played' });
-    if (s.servers.length) return tryServer(0); // direct file failed mid-way: fall back to the embed servers
-    pl.set({ loading: false, err: 'This stream could not be played' });
+    if (s.embeds.length) return playEmbeds(0); // direct file failed mid-way: fall back to the embed players
+    pl.set({ loading: false, err: ERR_NONE });
   });
   video = v;
   return v;
@@ -137,12 +140,15 @@ function load(q: Quality, at = 0, play = true) {
 let currentResolveKey = '';
 /** true while playUrl is trying engines (its own timeouts decide; the <video> error listener stays quiet) */
 let starting = false;
-/** Start a direct media URL with engine fallback + timeout; `onFail` runs when nothing produced frames. */
-function startDirect(url: string, at: number, onFail: (why: string) => void) {
+/** Start direct media (one live URL, or a title's ranked files one after another) with engine fallback
+ * + timeout; `onFail` runs when nothing produced frames. */
+function startDirect(src: string | MediaSrc[], at: number, onFail: (why: string) => void) {
   const v = getVideo();
   starting = true;
   v.playbackRate = pl.get().st.speed;
-  playUrl(v, url, { at, timeoutMs: 15000 }).then(
+  const key = currentResolveKey;
+  const run = typeof src === 'string' ? playUrl(v, src, { at, timeoutMs: 15000 }) : playDirect(v, src, { at, alive: () => currentResolveKey === key });
+  run.then(
     () => {
       starting = false;
       v.playbackRate = pl.get().st.speed;
@@ -167,14 +173,13 @@ export function startAt(t: Title, season: number, episode: number, o: { seasons?
   });
   pl.set({
     active: true, pip: false, live: false, title: t, label: '', hue: o.hue ?? pl.get().hue,
-    st, seasons: o.seasons || pl.get().seasons, local: o.local || null, embedUrl: null, servers: [], srv: 0, err: null, loading: !o.local
+    st, seasons: o.seasons || pl.get().seasons, local: o.local || null, embedUrl: null, embeds: [], alt: 0, err: null, loading: !o.local
   });
   const resume = library.progress(t.id, season, episode);
   const atPos = resume > 0.02 && resume < 0.97 ? resume * 120 : 0;
   const v0 = getVideo();
   cancelPlay(v0); // also drops an hls.js instance left from a live channel
-  clearTimeout(srvTimer);
-  srvGen++; // a pending failover of the previous title must not touch this one
+  stopEmbeds(); // a pending failover of the previous title must not touch this one
 
   if (o.local) {
     load(st.quality, atPos);
@@ -186,63 +191,46 @@ export function startAt(t: Title, season: number, episode: number, o: { seasons?
   void fetchStream(t.id, t.title, t.mediaType, season, episode).then((res) => {
     if (currentResolveKey !== key) return;
     if (!res) return pl.set({ loading: false, err: 'Could not load this title. Check your connection.' });
-    tried = new Set();
-    pl.set({ servers: res.servers, srv: 0 });
-    if (res.url) {
-      // a real media file: play it in the shared <video>; if no engine gets frames, use the embed servers
-      startDirect(res.url, atPos, () => {
+    pl.set({ embeds: res.embeds, alt: 0 });
+    if (res.direct.length) {
+      // real media files (v2 path): play them in the shared <video>; if none gets frames, use the embed players
+      startDirect(res.direct, atPos, () => {
         if (currentResolveKey !== key) return;
-        if (res.servers.length) tryServer(0);
-        else pl.set({ loading: false, err: 'This stream could not be played' });
+        if (res.embeds.length) playEmbeds(0);
+        else pl.set({ loading: false, err: ERR_NONE });
       });
       return;
     }
-    tryServer(0);
+    playEmbeds(0);
   });
 }
 
-/** Servers already tried for the current title (auto failover never loops forever). */
-let tried = new Set<number>();
-let srvTimer: ReturnType<typeof setTimeout> | undefined;
-let srvGen = 0;
-/** An embed page that has not fired `load` after this long is treated as dead and the next one is tried. */
+/** An embed page that shows no sign of life after this long: shown anyway when its host answered,
+ * replaced by the next untried player when it did not (core/embed-session.ts). */
 export const EMBED_LOAD_MS = 15000;
+let session: EmbedSession | null = null;
+/** The embed guard inside the iframe (APK) reports ready / playing / blocked. */
+if (typeof addEventListener === 'function') addEventListener('message', (e: MessageEvent) => session?.message(e.data));
 
-/** Switch to embed server `i` (iframe). Unreachable hosts (DNS/TLS/connection failure) are skipped
- * automatically; a page that does not load in EMBED_LOAD_MS moves on to the next untried server. */
-export function playServer(i: number) {
-  tried = new Set();
-  tryServer(i);
-}
-function tryServer(i: number) {
-  const s = pl.get(), sv = s.servers[i];
-  if (!sv) return pl.set({ loading: false, embedUrl: null, err: 'No working server for this title' });
-  tried.add(i);
+/** Embed players for the current title, starting at `i` (automatic failover). */
+function playEmbeds(i: number, fresh = false) {
   starting = false;
   cancelPlay(getVideo());
-  clearTimeout(srvTimer);
-  const gen = ++srvGen;
-  pl.set({ srv: i, embedUrl: sv.url, loading: true, err: null });
-  void reachable(sv.url).then((ok) => {
-    if (gen !== srvGen || ok) return;
-    failServer(gen);
-  });
-  srvTimer = setTimeout(() => gen === srvGen && pl.get().loading && failServer(gen), EMBED_LOAD_MS);
+  const list = pl.get().embeds;
+  if (!session || session.embeds !== list) {
+    session?.stop();
+    session = new EmbedSession(list, (v) => pl.set(v), { loadMs: EMBED_LOAD_MS });
+  }
+  session.start(i, fresh);
 }
-function failServer(gen: number) {
-  if (gen !== srvGen) return;
-  const s = pl.get();
-  const n = nextUntried(s.servers.length, s.srv, tried);
-  if (n < 0) return pl.set({ loading: false, embedUrl: null, err: 'No server is reachable right now. Check your connection and tap Retry.' });
-  tryServer(n);
+function stopEmbeds() {
+  session?.stop();
+  session = null;
 }
-/** VideoHost calls this when the iframe fired `load` (the server answered). */
+/** VideoHost calls this when the iframe fired `load` (the page answered). */
 export function embedLoaded() {
-  clearTimeout(srvTimer);
-  if (pl.get().embedUrl) pl.set({ loading: false });
+  session?.loaded();
 }
-/** Next server in the list (wraps). Manual choice: resets the auto-failover memory. */
-export const nextServer = () => playServer((pl.get().srv + 1) % Math.max(1, pl.get().servers.length));
 /** Start the current title again (after an error). */
 export function retryPlay() {
   const s = pl.get();
@@ -255,10 +243,9 @@ export function startLive(label: string, hue: number, streamUrl?: string) {
   const channel = pickChannel(label);
   const url = streamUrl || channel?.[5] || '';
   const st = initialState({ titleId: -1, title: label, mediaType: 'live', quality: 720, mode: 'fullscreen' });
-  clearTimeout(srvTimer);
-  srvGen++;
+  stopEmbeds();
   currentResolveKey = '';
-  pl.set({ active: true, pip: false, live: true, title: null, label, hue, st, local: null, embedUrl: null, servers: [], srv: 0, err: null, loading: true });
+  pl.set({ active: true, pip: false, live: true, title: null, label, hue, st, local: null, embedUrl: null, embeds: [], alt: 0, err: null, loading: true });
   if (!url) return pl.set({ loading: false, err: 'No channel to play' });
   startDirect(url, 0, () => pl.set({ loading: false, err: 'This channel is offline right now. Try another channel.' }));
 }
@@ -320,10 +307,9 @@ export function stop() {
   const v = getVideo();
   starting = false;
   currentResolveKey = '';
-  clearTimeout(srvTimer);
-  srvGen++;
+  stopEmbeds();
   cancelPlay(v); // also releases the decoder
-  pl.set({ active: false, pip: false, embedUrl: null, servers: [], err: null, loading: false });
+  pl.set({ active: false, pip: false, embedUrl: null, embeds: [], err: null, loading: false });
   keepAwake(false);
 }
 export function toPip() {

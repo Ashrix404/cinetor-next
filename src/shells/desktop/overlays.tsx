@@ -184,7 +184,7 @@ export function Downloads() {
       </div>
       <div class="g srow" style={{ cursor: 'default', flexWrap: 'wrap' }}>
         <Ic n="speedometer" />
-        <div class="gr">Parallel connections<small>More connections download faster on a good network. Browsers allow about 6 per server; 16/32/64 apply fully in the Android app.</small></div>
+        <div class="gr">Parallel connections<small>More connections download faster on a good network. Browsers allow only about 6 at a time; 16/32/64 apply fully in the Android app.</small></div>
         <div class="pill">{([16, 32, 64] as const).map((n) => <button key={n} class={ds.conn === n ? 'on' : ''} onClick={() => dlSettings.set({ conn: n })}>{n}</button>)}</div>
       </div>
       {act.length > 0 && <><div class="lbl" style={{ maxWidth: 720, display: 'flex', justifyContent: 'space-between' }}>Downloading<button onClick={() => pauseAll(!act.every((d) => d.status === 'paused'))}>{act.every((d) => d.status === 'paused') ? 'Resume all' : 'Pause all'}</button></div>{act.map((x) => row(x, false))}</>}
