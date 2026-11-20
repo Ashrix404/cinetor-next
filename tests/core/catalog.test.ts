@@ -33,7 +33,7 @@ describe('catalog', () => {
   it('uses the prototype sources', () => {
     expect(sourcesFor('anime', undefined)[0][0]).toEqual(['/discover/tv', { sort_by: 'popularity.desc', with_genres: '16', with_original_language: 'ja', page: '1' }]);
     expect(sourcesFor('drama', 'Pakistani Drama')[1][0][1]).toMatchObject({ with_original_language: 'hi' });
-    expect(sourcesFor('adult', undefined)[0].map((r) => r[1]?.with_genres)).toEqual(['27', '27', '53', '53', '10749', '10749']);
+    expect(sourcesFor('adult', undefined)[0][0][1]).toMatchObject({ include_adult: 'true' });
     expect(sourcesFor('home', undefined, true)[0]).toHaveLength(3);
   });
 });

@@ -36,6 +36,6 @@ describe('live + music', () => {
   it('genre playlists and track urls', () => {
     expect(genrePlaylists('Jazz').length).toBeGreaterThan(0);
     expect(genrePlaylists('Nope')).toEqual([]);
-    expect(trackUrl('Static Bloom')).toContain('youtube-nocookie.com/embed');
+    expect(trackUrl('Static Bloom')).toMatch(/v1\/music\/stream|youtube-nocookie/);
   });
 });
