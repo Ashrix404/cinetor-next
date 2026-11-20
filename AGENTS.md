@@ -32,11 +32,12 @@ The approved UI and behavior live in `prototype/`. That folder is the single sou
 7. **Never invent features, screens, strings or settings** that are not in `prototype/` or `docs/01-product-spec.md`. If something is unclear, ask.
 8. **Never touch** the old repos `Ashrix404/cinetor-v2` and `Ashrix404/cinetor-app`.
 9. **One task at a time.** Do exactly the task named in the prompt from `docs/04-implementation-plan.md`. Do not start the next task.
-10. **Small commits** on a branch named `task/<id>-<slug>`. Never commit to `main` directly. Never force-push `main`.
+10. **Small commits** on a branch named `task/<id>-<slug>`. Never commit to `main` directly (merging a green PR via `gh pr merge` per §2 step 0 is allowed). Never force-push `main`.
 11. **A task is done only when CI is green** (see §3) and the task's acceptance checks are ticked in `docs/PROGRESS.md`.
 
 ## 2. How to work on a task (every time, in this order)
 
+0. **Merge the previous task first.** If the previous task's PR is still open: confirm its CI is green (or, if `ci.yml` does not exist yet, that the PR only changes docs), then run `gh pr ready <n>` and `gh pr merge <n> --squash --delete-branch`, then `git checkout main && git pull`. Only merge the PR of the immediately previous task, never any other PR. If CI is red, stop and tell the user instead of merging.
 1. Read `AGENTS.md`, `docs/PROGRESS.md`, and the task section in `docs/04-implementation-plan.md`.
 2. Open the matching part of `prototype/` and read the exact markup/CSS/JS you are porting. Quote the prototype file and function names in your plan.
 3. Write a short plan (files to create/modify, functions with signatures) into `docs/PROGRESS.md` under the task.
@@ -46,7 +47,7 @@ The approved UI and behavior live in `prototype/`. That folder is the single sou
 7. Commit, push, open a draft PR with `gh pr create --draft`.
 8. Wait for CI: `gh run watch` (or `gh run list --branch <branch> --limit 1`).
 9. If CI fails: `gh run view <id> --log-failed`, read the real error, fix the real cause, push again. Never "fix" by deleting tests or disabling checks.
-10. When green: tick acceptance boxes in `docs/PROGRESS.md`, push, mark PR ready, tell the user the PR link and stop.
+10. When green: tick acceptance boxes in `docs/PROGRESS.md`, push, mark PR ready, tell the user the PR link and stop. Do NOT merge it in this session; the next task session merges it in step 0 after the user has checked the preview.
 
 ## 3. What "green" means
 

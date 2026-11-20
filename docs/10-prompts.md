@@ -41,7 +41,8 @@ Then STOP and show me the open questions.
 
 ```
 Do task T__ from docs/04-implementation-plan.md and nothing else.
-Follow AGENTS.md §2 step by step. Load skills: zero-hallucination-coder,
+Follow AGENTS.md §2 step by step, starting with step 0 (merge the previous
+task's PR yourself if its CI is green, then sync main). Load skills: zero-hallucination-coder,
 karpathy-coder, surgical-patch, verification-before-completion
 (+ the extra skills AGENTS.md §6 lists for this kind of task).
 
