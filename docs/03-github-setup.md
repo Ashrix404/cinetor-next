@@ -25,7 +25,7 @@ gh repo create Ashrix404/cinetor-next --private --source . --push
 gh repo create Ashrix404/cinetor-releases --public --description "Cinetor builds: APKs, web app, media" --add-readme
 ```
 
-## Step 2 — Fine-grained token so CI can publish to the public repo
+## Step 2 — Fine-grained token so CI can publish to the public repo — DONE (RELEASE_REPO_TOKEN set, push access verified)
 
 1. GitHub → Settings → Developer settings → Fine-grained tokens → Generate.
 2. Repository access: only `Ashrix404/cinetor-releases`.
