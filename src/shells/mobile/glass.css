@@ -1,6 +1,6 @@
 /* Liquid glass (html.lg), blended: same layout as the flat theme, no floating blocks or outlines.
    Only a faint colour glow behind the page and real translucency (blur) on the fixed chrome. */
-html.lg .scr{isolation:isolate;background:#05060a}
+/* no isolation / background on .scr: it would trap sheets under the translucent nav */
 html.lg .scr::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(45% 32% at 18% 10%,rgba(110,140,255,.2),transparent 75%),radial-gradient(40% 30% at 88% 32%,rgba(255,110,190,.14),transparent 75%),radial-gradient(48% 36% at 30% 92%,rgba(50,230,200,.13),transparent 75%)}
 html.lg #app{background:#05060a}
 html.lg #app.hasnav .nav,html.lg .bbar{background:rgba(8,9,14,.5)!important;-webkit-backdrop-filter:blur(26px) saturate(170%);backdrop-filter:blur(26px) saturate(170%);box-shadow:none;border:0}
@@ -16,3 +16,16 @@ html.lg .opts span.on,html.lg .chip.sel{background:rgba(255,255,255,.9)!importan
 html.lg .hc{border-color:rgba(255,255,255,.08)}
 html.lg .sw{background:rgba(255,255,255,.12)}html.lg .sw.on{background:#fff;border-color:#fff}
 html.lg .toast{background:rgba(240,240,245,.9)}
+
+/* floating rounded glass instead of full-width boxy bars */
+html.lg #app.hasnav .nav{left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));padding:8px 4px;border-radius:30px;background:rgba(30,32,42,.46)!important;box-shadow:0 10px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.1)}
+html.lg #app .nav{padding-bottom:8px}
+html.lg .nav .on i{border-radius:20px}
+html.lg .bbar{margin:6px 10px 2px;border-radius:24px;box-shadow:0 6px 20px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.08)}
+html.lg .bbar::after{display:none}
+html.lg .sheet{left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));border-radius:30px;box-shadow:0 16px 40px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.1)}
+html.lg .sheet.dlsheet{padding-bottom:14px}
+html.lg .dlf{background:transparent;border-top:0}
+html.lg .dialog{border-radius:30px}
+html.lg .mini{border-radius:22px}
+html.lg .toast{border-radius:22px}

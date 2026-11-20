@@ -74,3 +74,6 @@ export function fmtTime(sec: number): string {
   const h = Math.floor(x / 3600), m = Math.floor(x / 60) % 60, s = x % 60;
   return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(s).padStart(2, '0');
 }
+
+/** Seconds to jump for a horizontal drag of `dx` px on a `width` px player (full width ≈ 2 min). */
+export const seekDelta = (dx: number, width: number) => Math.round((dx / Math.max(1, width)) * 120);

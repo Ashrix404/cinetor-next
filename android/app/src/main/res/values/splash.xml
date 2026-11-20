@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Same near-black as the in-app splash (#splash in app.css) so launch is one continuous screen. -->
+    <color name="cinetor_splash">#050506</color>
+</resources>

@@ -6,6 +6,7 @@ const config: CapacitorConfig = {
   appId: 'com.mythbrix.cinetor',
   appName: 'Cinetor',
   webDir: 'dist/mobile',
+  backgroundColor: '#050506',
   android: { allowMixedContent: false },
 };
 

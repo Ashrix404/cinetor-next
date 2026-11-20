@@ -11,6 +11,7 @@ import { bg, ErrorCard, hueOf, Loading, ratingOf, Row } from '../ui/common';
 import { ctl, onPlayerTap, pl, showCtl, startAt, toPip } from '../player/store';
 import { useStore as useStoreC } from '../ui/hooks';
 import { Vcore } from '../player/controls';
+import { createGestures } from '../player/gestures';
 import { PlayerSheet } from '../player/sheets';
 import { DlBtn, DlSheet, openDl, openDlAll, allDone } from '../dl/sheet';
 
@@ -31,7 +32,6 @@ function Trailer({ k }: { k: string }) {
 /** Inline portrait player with swipe down → PiP, swipe up → fullscreen. */
 function InlinePlayer() {
   const ref = useRef<HTMLDivElement>(null);
-  const sw = useRef<{ x: number; y: number } | null>(null);
   const fs = () => nav('player');
   const c = useStoreC(ctl);
   useEffect(showCtl, []);
@@ -46,33 +46,30 @@ function InlinePlayer() {
     addEventListener('resize', onR);
     return () => removeEventListener('resize', onR);
   }, []);
-  const down = (e: PointerEvent) => {
-    if (pl.get().embedUrl || (e.target as HTMLElement).closest('.pi,.ibtn,.sk,.big,.ptrk')) return;
-    sw.current = { x: e.clientX, y: e.clientY };
-  };
-  const move = (e: PointerEvent) => {
-    if (pl.get().embedUrl) return;
-    const s = sw.current, el = ref.current;
-    if (!s || !el) return;
-    const dy = e.clientY - s.y, dx = e.clientX - s.x;
-    if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx)) {
-      el.style.transition = 'none';
-      el.style.transform = `translateY(${Math.max(-40, Math.min(60, dy * 0.4))}px) scale(${1 - Math.min(0.12, Math.abs(dy) / 900)})`;
-    }
-  };
-  const up = (e: PointerEvent) => {
-    if (pl.get().embedUrl) return;
-    const s = sw.current, el = ref.current;
-    sw.current = null;
-    if (!s || !el) return;
-    el.style.transition = 'transform .18s';
-    el.style.transform = '';
-    const dy = e.clientY - s.y, dx = e.clientX - s.x;
-    if (Math.abs(dy) > 55 && Math.abs(dy) > Math.abs(dx)) (dy > 0 ? toPip() : fs());
-  };
+  // slide left/right = seek, long hold = 2× (shared with the fullscreen player); drag down = PiP, up = fullscreen
+  const gs = useRef(
+    createGestures({
+      move(d, e) {
+        const el = ref.current;
+        if (!el) return;
+        const dy = e.clientY - d.y;
+        el.style.transition = 'none';
+        el.style.transform = `translateY(${Math.max(-40, Math.min(60, dy * 0.4))}px) scale(${1 - Math.min(0.12, Math.abs(dy) / 900)})`;
+      },
+      end(d, e) {
+        const el = ref.current;
+        if (el) {
+          el.style.transition = 'transform .18s';
+          el.style.transform = '';
+        }
+        const dy = e.clientY - d.y;
+        if (Math.abs(dy) > 55) (dy > 0 ? toPip() : fs());
+      },
+    }),
+  ).current;
   const hasEmbed = !!pl.get().embedUrl;
   return (
-    <div class={'ivp' + (c.hidden ? ' ctlhide' : '')} ref={ref} style={`--h:${pl.get().hue};touch-action:${hasEmbed ? 'auto' : 'none'}`} onClick={hasEmbed ? undefined : onPlayerTap} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
+    <div class={'ivp' + (c.hidden ? ' ctlhide' : '')} ref={ref} style={`--h:${pl.get().hue};touch-action:${hasEmbed ? 'auto' : 'none'}`} onClick={hasEmbed ? undefined : (e) => !gs.suppressed() && onPlayerTap(e)} onPointerDown={gs.down} onPointerMove={gs.move} onPointerUp={gs.up} onPointerCancel={gs.up}>
       <Vcore land={false} onFs={fs} />
     </div>
   );

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { useStore } from '../ui/hooks';
-import { getVideo, pl } from './store';
+import { getVideo, nextServer, pl } from './store';
 
 /** Mounts the shared <video> element or web stream iframe inside this box (prototype `.vid`). */
 export function VideoHost({ fit, hue }: { fit: string; hue: number }) {
@@ -25,6 +25,7 @@ export function VideoHost({ fit, hue }: { fit: string; hue: number }) {
     return (
       <div class={'vid fit-' + fit} style={`--h:${hue};position:relative;background:#05060a;overflow:hidden;`}>
         <iframe
+          key={s.embedUrl}
           src={s.embedUrl}
           style="width:100%;height:100%;border:none;position:absolute;inset:0;"
           allowFullScreen
@@ -32,9 +33,10 @@ export function VideoHost({ fit, hue }: { fit: string; hue: number }) {
           onLoad={() => setIframeLoaded(true)}
         />
         {(!iframeLoaded || s.loading) && (
-          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#05060a;z-index:3;gap:12px;pointer-events:none;">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#05060a;z-index:3;gap:12px;">
             <div style="width:48px;height:48px;border:3.5px solid rgba(255,255,255,0.15);border-top-color:#38bdf8;border-right-color:#38bdf8;border-radius:50%;animation:spin 0.8s linear infinite;box-shadow:0 0 20px rgba(56,189,248,0.35);" />
             <span style="font-size:13px;color:rgba(255,255,255,0.8);font-weight:500;letter-spacing:0.3px;">Loading stream…</span>
+            {s.servers.length > 1 && <span class="vg-slow" role="button" onClick={nextServer}>Taking long? Try another server</span>}
           </div>
         )}
       </div>

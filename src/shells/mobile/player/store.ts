@@ -26,12 +26,17 @@ export interface Pl {
   /** set when playing a downloaded file (offline) */
   local: string | null;
   embedUrl: string | null;
+  /** every embed server the gateway offers + the one in use */
+  servers: { name: string; url: string }[];
+  srv: number;
+  /** set when nothing could be played (never leave a black screen) */
+  err: string | null;
   loading: boolean;
 }
 export const pl = createStore<Pl>('pl', {
   active: false, pip: false, px: null, py: null, live: false, hue: 215, title: null, label: '',
   st: initialState({ titleId: 0, title: '', mediaType: 'movie' }), seasons: MOCK_SEASONS, tracks: {}, gen: null, local: null,
-  embedUrl: null, loading: false
+  embedUrl: null, servers: [], srv: 0, err: null, loading: false
 }, false);
 /** Position ticks live in their own store so only the seek bar re-renders. */
 export const ptime = createStore('ptime', { pos: 0, dur: 0 }, false);
@@ -50,26 +55,11 @@ export function toggleCtl() {
   if (ctl.get().hidden) showCtl();
   else (clearTimeout(ctlTimer), ctl.set({ hidden: true }));
 }
-let lastTapTime = 0;
-let tapTimer: ReturnType<typeof setTimeout> | undefined;
-
-/** A tap on the video or empty space toggles controls; double press toggles play/pause. */
+/** A single tap on the video / empty space toggles the controls (portrait and landscape). */
 export function onPlayerTap(e: MouseEvent) {
   const t = e.target as HTMLElement;
-  if (t.closest('.pi,.ibtn,.sk,.big,.ptrk,.seek,.grp,.sheet,.scrim,.genpill,.vg-pill,.vg-btn,.vg-back,.vg-fs')) return showCtl();
-
-  const now = Date.now();
-  if (now - lastTapTime < 340) {
-    clearTimeout(tapTimer);
-    lastTapTime = 0;
-    togglePlay();
-    showCtl();
-    return;
-  }
-  lastTapTime = now;
-  tapTimer = setTimeout(() => {
-    toggleCtl();
-  }, 340);
+  if (t.closest('.pi,.ibtn,.sk,.big,.ptrk,.seek,.grp,.sheet,.scrim,.genpill,.vg-pill,.vg-btn,.vg-back,.vg-fs,.vg-play,.vg-seekbtn,.vg-trk,.vg-time,.vg-err')) return showCtl();
+  toggleCtl();
 }
 
 let video: HTMLVideoElement | null = null;
@@ -89,6 +79,16 @@ export function getVideo(): HTMLVideoElement {
     if (s.live) return;
     if (s.st.mediaType === 'tv') next();
     else patch({ playing: false });
+  });
+  v.addEventListener('playing', () => pl.set({ loading: false, err: null }));
+  v.addEventListener('waiting', () => pl.get().active && !pl.get().embedUrl && pl.set({ loading: true }));
+  v.addEventListener('canplay', () => pl.set({ loading: false }));
+  v.addEventListener('error', () => {
+    if (!v.getAttribute('src')) return; // src was cleared on purpose
+    const s = pl.get();
+    if (s.live || s.local) return pl.set({ loading: false, err: 'This stream could not be played' });
+    if (s.servers.length) return playServer(0); // direct file failed: fall back to the embed servers
+    pl.set({ loading: false, err: 'This stream could not be played' });
   });
   video = v;
   return v;
@@ -142,59 +142,56 @@ export function startAt(t: Title, season: number, episode: number, o: { seasons?
   });
   pl.set({
     active: true, pip: false, live: false, title: t, label: '', hue: o.hue ?? pl.get().hue,
-    st, seasons: o.seasons || pl.get().seasons, local: o.local || null, embedUrl: null, loading: !o.local
+    st, seasons: o.seasons || pl.get().seasons, local: o.local || null, embedUrl: null, servers: [], srv: 0, err: null, loading: !o.local
   });
   const resume = library.progress(t.id, season, episode);
   const atPos = resume > 0.02 && resume < 0.97 ? resume * 120 : 0;
+  const v0 = getVideo();
+  if (!o.local) { v0.pause(); v0.removeAttribute('src'); v0.load(); }
 
   if (o.local) {
     load(st.quality, atPos);
     return;
   }
 
-  // Resolve real high-speed stream from Cloudflare Gateway in background (<200ms cached, ~2s fresh)
   const key = `${t.id}:${season}:${episode}`;
   currentResolveKey = key;
   void fetchStream(t.id, t.title, t.mediaType, season, episode).then((res) => {
     if (currentResolveKey !== key) return;
-    pl.set({ loading: false });
-
-    // Native Android direct stream
-    if (isNative() && res?.url) {
+    if (!res) return pl.set({ loading: false, err: 'Could not load this title. Check your connection.' });
+    const servers = res.embeds.map((url, i) => ({ url, name: res.sources.find((x) => x.url === url)?.name || 'Server ' + (i + 1) }));
+    pl.set({ servers, srv: 0 });
+    if (res.url) {
+      // a real media file: play it in the shared <video>; an error falls back to the embed servers
       const v = getVideo();
       v.src = res.url;
       const seek = () => { try { v.currentTime = atPos; } catch {} };
       if (v.readyState >= 1) seek();
       else v.addEventListener('loadedmetadata', seek, { once: true });
       v.playbackRate = pl.get().st.speed;
-      const onErr = () => {
-        v.removeEventListener('error', onErr);
-        if (res?.embedUrl) pl.set({ embedUrl: res.embedUrl });
-      };
-      v.addEventListener('error', onErr, { once: true });
-      v.play().then(() => keepAwake(true), () => {
-        if (res?.embedUrl) pl.set({ embedUrl: res.embedUrl });
-        else patch({ playing: false });
-      });
+      v.play().then(() => keepAwake(true), () => { if (servers.length) playServer(0); else pl.set({ loading: false, err: 'Tap play to start' }); });
       return;
     }
-
-    // Embed player fallback (works universally on Web and WebView)
-    if (res?.embedUrl) {
-      pl.set({ embedUrl: res.embedUrl });
-      return;
-    }
-
-    if (res?.url) {
-      const v = getVideo();
-      v.src = res.url;
-      const seek = () => { try { v.currentTime = atPos; } catch {} };
-      if (v.readyState >= 1) seek();
-      else v.addEventListener('loadedmetadata', seek, { once: true });
-      v.playbackRate = pl.get().st.speed;
-      v.play().then(() => keepAwake(true), () => patch({ playing: false }));
-    }
+    playServer(0);
   });
+}
+
+/** Switch to embed server `i` (iframe). */
+export function playServer(i: number) {
+  const s = pl.get(), sv = s.servers[i];
+  if (!sv) return pl.set({ loading: false, err: 'No working server for this title' });
+  const v = getVideo();
+  v.pause();
+  v.removeAttribute('src');
+  pl.set({ srv: i, embedUrl: sv.url, loading: false, err: null });
+}
+/** Next server in the list (wraps). */
+export const nextServer = () => playServer((pl.get().srv + 1) % Math.max(1, pl.get().servers.length));
+/** Start the current title again (after an error). */
+export function retryPlay() {
+  const s = pl.get();
+  if (s.live) return startLive(s.label, s.hue);
+  if (s.title) startAt(s.title, s.st.season, s.st.episode, { hue: s.hue });
 }
 
 /** Live channel / match: plays the real live HLS stream. */
@@ -202,7 +199,7 @@ export function startLive(label: string, hue: number, streamUrl?: string) {
   const channel = LIVE_ALL.find((c) => c[1] === label || c[0] === label);
   const url = streamUrl || channel?.[5] || 'https://tsports.live/live.m3u8';
   const st = initialState({ titleId: -1, title: label, mediaType: 'live', quality: 720, mode: 'fullscreen' });
-  pl.set({ active: true, pip: false, live: true, title: null, label, hue, st, local: null, embedUrl: null, loading: false });
+  pl.set({ active: true, pip: false, live: true, title: null, label, hue, st, local: null, embedUrl: null, servers: [], srv: 0, err: null, loading: true });
   const v = getVideo();
   v.src = url;
   v.play().then(() => keepAwake(true), () => patch({ playing: false }));
@@ -219,6 +216,14 @@ export function seekBy(d: number) {
   const wasPlaying = pl.get().st.playing;
   v.currentTime = Math.max(0, Math.min(v.duration || 0, v.currentTime + d));
   if (wasPlaying && v.paused) void v.play().catch(() => {});
+}
+export function seekTo(t: number) {
+  const v = getVideo();
+  const wasPlaying = pl.get().st.playing;
+  v.currentTime = Math.max(0, Math.min(v.duration || t, t));
+  ptime.set({ pos: v.currentTime });
+  if (wasPlaying && v.paused) void v.play().catch(() => {});
+  showCtl();
 }
 export function seekFrac(f: number) {
   const v = getVideo();
@@ -258,7 +263,7 @@ export function stop() {
   v.pause();
   v.removeAttribute('src');
   v.load(); // release the decoder
-  pl.set({ active: false, pip: false, embedUrl: null, loading: false });
+  pl.set({ active: false, pip: false, embedUrl: null, servers: [], err: null, loading: false });
   keepAwake(false);
 }
 export function toPip() {

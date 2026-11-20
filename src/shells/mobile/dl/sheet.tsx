@@ -96,8 +96,8 @@ export function DlSheet() {
   };
   return (
     <>
-      <div class="scrim" onClick={() => setUi({ dls: null })} />
-      <div class="sheet dlsheet" style="max-height:82%;overflow:auto;z-index:50">
+      <div class="scrim" style="z-index:59" onClick={() => setUi({ dls: null })} />
+      <div class="sheet dlsheet" style="z-index:60">
         <div class="shd"><b style="font-size:17px;display:flex;gap:8px;align-items:center"><I n="download-outline" /><span>{d.title.title}</span></b><span style="font-size:22px;cursor:pointer;flex:none" onClick={() => setUi({ dls: null })}><I n="close" /></span></div>
         <div class="dlbody">
         {!comic && !movie && (
