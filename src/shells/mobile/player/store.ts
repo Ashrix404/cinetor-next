@@ -5,6 +5,7 @@ import { createStore } from '../../../core/store';
 import type { Title } from '../../../core/tmdb';
 import type { Quality } from '../../../core/series-settings';
 import { cur, library, series } from '../state';
+import { isNative } from '../../../core/platform';
 
 export interface Pl {
   active: boolean;
@@ -67,6 +68,12 @@ export const srcFor = (q: Quality) => MEDIA_BASE + clipFor(q);
 export function patch(p: Partial<PlayerState>) {
   const s = pl.get();
   pl.set({ st: { ...s.st, ...p } });
+  if ('playing' in p) keepAwake(!!p.playing);
+}
+/** Keep the screen on while playing (APK). */
+function keepAwake(on: boolean) {
+  if (!isNative()) return;
+  void import('../../../native/cinetor-native').then(({ CinetorNative }) => CinetorNative.keepScreenOn({ on }).catch(() => {}));
 }
 
 function load(q: Quality, at = 0, play = true) {
@@ -83,7 +90,7 @@ function load(q: Quality, at = 0, play = true) {
   if (v.readyState >= 1) seek();
   else v.addEventListener('loadedmetadata', seek, { once: true });
   v.playbackRate = pl.get().st.speed;
-  if (play) v.play().catch(() => patch({ playing: false }));
+  if (play) v.play().then(() => keepAwake(true), () => patch({ playing: false }));
 }
 
 /** Prototype `startAt`: start a title/episode with the series memory applied. */
@@ -152,6 +159,7 @@ export function stop() {
   v.removeAttribute('src');
   v.load(); // release the decoder
   pl.set({ active: false, pip: false });
+  keepAwake(false);
 }
 export function toPip() {
   pl.set({ pip: true });

@@ -19,6 +19,7 @@ export interface CinetorNativePlugin {
   updateDownload(o: { url: string; sha256: string }): Promise<{ file: string }>;
   updateInstall(o: { file: string }): Promise<{ started: boolean; needsPermission?: boolean }>;
   keepAliveForPlayback(o: { on: boolean }): Promise<void>;
+  keepScreenOn(o: { on: boolean }): Promise<void>;
   addListener(e: 'downloadProgress', fn: (p: DlProgress) => void): Promise<PluginListenerHandle>;
   addListener(e: 'updateProgress', fn: (p: { bytesDone: number; bytesTotal: number }) => void): Promise<PluginListenerHandle>;
 }
