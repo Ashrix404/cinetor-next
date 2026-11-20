@@ -1,4 +1,5 @@
 // Download manager shared by the mobile and desktop shells (TV has no downloads).
+import { isAdultId, isAdultUnlocked } from '../adult';
 import { isNative } from '../platform';
 import { createStore } from '../store';
 import { trackUrl } from '../music';
@@ -134,10 +135,12 @@ export async function cancel(id: string) {
   delete items[id];
   dlStore.set({ items });
 }
-export const active = () => Object.values(dlStore.get().items).filter((x) => x.status !== 'done');
-export const finished = () => Object.values(dlStore.get().items).filter((x) => x.status === 'done');
+/** Adult downloads are listed only while the Adult section is unlocked (src/core/adult.ts). */
+const shown = (x: DlItem) => isAdultUnlocked() || !isAdultId(x.titleId);
+export const active = () => Object.values(dlStore.get().items).filter((x) => x.status !== 'done' && shown(x));
+export const finished = () => Object.values(dlStore.get().items).filter((x) => x.status === 'done' && shown(x));
 export async function pauseAll(p: boolean) {
-  for (const it of active()) await (p ? pause(it.id) : resume(it.id));
+  for (const it of Object.values(dlStore.get().items).filter((x) => x.status !== 'done')) await (p ? pause(it.id) : resume(it.id));
 }
 
 // ---- in-app playback of finished downloads -------------------------------------------------

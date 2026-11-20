@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { ComponentChildren } from 'preact';
 import { img, type Title } from '../../core/tmdb';
+import { isAdultTitle, isAdultUnlocked } from '../../core/adult';
 import { hashS } from '../../core/sports';
 import { MDI } from '../../assets/mdi';
 import { SVP, MARK } from '../../assets/svp';
@@ -15,6 +16,7 @@ export const rate = (t: Title) => (t.rating ? t.rating.toFixed(1) : '–');
 export const hue = (s: string) => hashS(s) % 360;
 
 export function Poster({ it, bar, rm, comic }: { it: Title; bar?: number; rm?: () => void; comic?: boolean }) {
+  if (!isAdultUnlocked() && isAdultTitle(it)) return null; // last line of adult isolation
   return (
     <button class="pt" style={{ '--h': hue(it.title), backgroundImage: it.poster ? `url(${img(it.poster, 'w342')})` : undefined }} onClick={() => open(it, comic)} title={it.title}>
       <span class="r"><Ic n="star" /> {rate(it)}</span>

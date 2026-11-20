@@ -25,17 +25,18 @@ export function App() {
     return () => removeEventListener('keydown', k);
   }, [u.pin, u.dls, u.reader]);
   const pageKey = ['detail', 'person', 'list'].includes(r.name) ? null : r.name;
+  const locked = <main class="page"><h1>Adult section is locked</h1><p class="sub">Enter your PIN to continue.</p></main>;
   let page;
   switch (r.name) {
     case 'anime': case 'drama': case 'comics': page = <Feed key={r.name} kind={r.name} />; break;
-    case 'adult': page = u.adultOk ? <Feed key="adult" kind="adult" /> : <main class="page"><h1>Adult section is locked</h1><p class="sub">Enter your PIN to continue.</p></main>; break;
+    case 'adult': page = u.adultOk ? <Feed key="adult" kind="adult" /> : locked; break;
     case 'tv': page = <TvPage />; break;
     case 'music': page = <Music />; break;
     case 'search': page = <Search />; break;
     case 'settings': page = <Settings />; break;
     case 'library': page = <Library />; break;
     case 'downloads': page = <Downloads />; break;
-    case 'detail': page = <Detail key={String((r.params?.t as { id: number }).id)} />; break;
+    case 'detail': page = isAdultTitle(r.params?.t as Title) && !u.adultOk ? locked : <Detail key={String((r.params?.t as { id: number }).id)} />; break;
     case 'person': page = <Person key={String(r.params?.id)} />; break;
     case 'list': page = <ListPage />; break;
     default: page = <Feed key="home" kind="home" />;

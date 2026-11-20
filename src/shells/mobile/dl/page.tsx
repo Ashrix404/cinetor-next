@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { active, dlSettings, dlStore, finished, onDone, pause, pauseAll, playableUrl, removeMany, resume, speeds, type DlItem } from '../../../core/downloads';
 import { tmdbGet } from '../../../core/tmdb';
+import { isAdultId } from '../../../core/adult';
 import { pickWebFolder } from '../../../core/downloads/save';
 import { canPickFolder, isNative } from '../../../core/platform';
 import { img, type Title } from '../../../core/tmdb';
@@ -18,7 +19,8 @@ let wired = false;
 export function wireDownloadToasts() {
   if (wired) return;
   wired = true;
-  onDone((it) => it && toast(it.status === 'done' ? 'Saved · ' + short(it.savedAs || it.path) : 'Download failed'));
+  // Adult downloads never put their title in a toast (src/core/adult.ts).
+  onDone((it) => it && toast(it.status === 'done' ? (isAdultId(it.titleId) ? 'Saved' : 'Saved · ' + short(it.savedAs || it.path)) : 'Download failed'));
 }
 const short = (p: string) => (p.length > 46 ? '…' + p.slice(-44) : p);
 const mb = (n: number) => (n / 1048576).toFixed(n > 1048576 * 100 ? 0 : 1) + ' MB';
