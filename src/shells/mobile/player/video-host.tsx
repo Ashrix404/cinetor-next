@@ -1,15 +1,16 @@
 import { useEffect, useRef } from 'preact/hooks';
+import { useStore } from '../ui/hooks';
 import { getVideo, pl } from './store';
 
 /** Mounts the shared <video> element or web stream iframe inside this box (prototype `.vid`). */
 export function VideoHost({ fit, hue }: { fit: string; hue: number }) {
   const ref = useRef<HTMLDivElement>(null);
-  const s = pl.get();
+  const s = useStore(pl);
 
   useEffect(() => {
     if (s.embedUrl) return;
     const v = getVideo();
-    const was = pl.get().st.playing;
+    const was = s.st.playing;
     ref.current?.appendChild(v);
     // Moving a <video> to another parent makes the browser pause it (portrait → landscape stop bug).
     if (was && v.paused) void v.play().catch(() => {});

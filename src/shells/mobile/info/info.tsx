@@ -47,10 +47,11 @@ function InlinePlayer() {
     return () => removeEventListener('resize', onR);
   }, []);
   const down = (e: PointerEvent) => {
-    if ((e.target as HTMLElement).closest('.pi,.ibtn,.sk,.big,.ptrk')) return;
+    if (pl.get().embedUrl || (e.target as HTMLElement).closest('.pi,.ibtn,.sk,.big,.ptrk')) return;
     sw.current = { x: e.clientX, y: e.clientY };
   };
   const move = (e: PointerEvent) => {
+    if (pl.get().embedUrl) return;
     const s = sw.current, el = ref.current;
     if (!s || !el) return;
     const dy = e.clientY - s.y, dx = e.clientX - s.x;
@@ -60,16 +61,18 @@ function InlinePlayer() {
     }
   };
   const up = (e: PointerEvent) => {
+    if (pl.get().embedUrl) return;
     const s = sw.current, el = ref.current;
     sw.current = null;
     if (!s || !el) return;
     el.style.transition = 'transform .18s';
     el.style.transform = '';
     const dy = e.clientY - s.y, dx = e.clientX - s.x;
-    if (Math.abs(dy) > 55 && Math.abs(dy) > Math.abs(dx) * 1.4) (dy > 0 ? toPip() : fs());
+    if (Math.abs(dy) > 55 && Math.abs(dy) > Math.abs(dx)) (dy > 0 ? toPip() : fs());
   };
+  const hasEmbed = !!pl.get().embedUrl;
   return (
-    <div class={'ivp' + (c.hidden ? ' ctlhide' : '')} ref={ref} style={`--h:${pl.get().hue};touch-action:none`} onClick={onPlayerTap} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
+    <div class={'ivp' + (c.hidden ? ' ctlhide' : '')} ref={ref} style={`--h:${pl.get().hue};touch-action:${hasEmbed ? 'auto' : 'none'}`} onClick={hasEmbed ? undefined : onPlayerTap} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
       <Vcore land={false} onFs={fs} />
     </div>
   );

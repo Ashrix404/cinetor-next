@@ -1,5 +1,6 @@
 // Desktop player overlay (prototype web Player + mobile landscape control set, docs/05-player.md).
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { useStore } from '../mobile/ui/hooks';
 import { MEDIA_BASE } from '../../core/config';
 import { createStore } from '../../core/store';
 import { cycleFit, fmtTime, initialState, MOCK_SEASONS, next as nextR, prev as prevR, SPEEDS, QUALITIES, type PlayerState, type Seasons } from '../../core/player-model';
@@ -28,7 +29,7 @@ const cues = new Map<string, Cue[]>();
 type Menu = 'q' | 'sub' | 'audio' | 'eps' | 'server' | 'more' | null;
 
 export function Player() {
-  const s = dpl.get(), st = s.st;
+  const s = useStore(dpl), st = s.st;
   const v = useRef<HTMLVideoElement>(null);
   const [hide, setHide] = useState(false);
   const [menu, setMenu] = useState<Menu>(null);
@@ -169,7 +170,15 @@ export function Player() {
         )}
       </div>
       {c && !st.locked && <div class="psub" style={css.pos}><span style={css.span}>{c.text}</span></div>}
-      {s.pip ? (
+      {s.embedUrl ? (
+        <div class="ui" style="pointer-events:none;background:linear-gradient(rgba(0,0,0,0.85),transparent 25%);">
+          <div class="pt1" style="pointer-events:auto;">
+            <button class="pb" onClick={close}><Ic n="arrow-left" /></button>
+            <div class="gr">{s.live || st.title} {!s.live && st.mediaType === 'tv' && <small> S{st.season} · E{st.episode}</small>}</div>
+            <button class="pb" onClick={close}><Ic n="close" /></button>
+          </div>
+        </div>
+      ) : s.pip ? (
         <div class="ui"><div class="pt1"><button class="pb" onClick={() => dpl.set({ pip: false })}><Ic n="arrow-expand" /></button><div class="gr" /><button class="pb" onClick={() => set({ playing: !st.playing })}><Ic n={st.playing ? 'pause' : 'play'} /></button><button class="pb" onClick={close}><Ic n="close" /></button></div></div>
       ) : st.locked ? (
         <div class="ui"><div class="pmid" style="left:24px;right:auto"><button class="pb on" onClick={() => set({ locked: false })}><Ic n="lock" /></button></div></div>

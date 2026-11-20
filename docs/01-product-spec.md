@@ -16,7 +16,7 @@ Global facts:
 - Version shown in About = real app version from the build (not 5.3.3).
 - Theme default: flat dark, neutral white accent. Optional theme: **Liquid glass** (mobile + desktop only, never TV).
 - Adult content: TMDB requests always use `include_adult=false`. The "Adult section" is a PIN-gated genre feed (horror/thriller/romance movies), never explicit content.
-- Video: mock clips only (see `docs/06-media-and-downloads.md`).
+- Video & Media: Real streaming media powered by the Cloudflare Edge Gateway (`cinetor-api`) connecting Live TV HLS streams, YouTube Music, and verified multi-provider resolvers. Zero mock video.
 
 ---
 

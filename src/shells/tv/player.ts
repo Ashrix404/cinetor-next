@@ -13,6 +13,7 @@ import { LIVE_ALL } from '../../core/live';
 interface P { t: Title | null; label: string; live: boolean; s: number; e: number; q: Quality; sub: string; audio: string; menu: string | null; seasons: Seasons }
 export let P: P | null = null;
 let video: HTMLVideoElement | null = null;
+let tvIframe: HTMLIFrameElement | null = null;
 let root: HTMLElement | null = null;
 let hideT: ReturnType<typeof setTimeout> | undefined;
 let toastFn: (m: string) => void = () => {};
@@ -51,14 +52,26 @@ function load(resume: boolean) {
     currentTvResolveKey = key;
     void fetchStream(P.t.id, P.t.title, P.t.mediaType, P.s, P.e).then((res) => {
       if (currentTvResolveKey !== key) return;
-      const targetUrl = res?.url || res?.embedUrl;
-      if (targetUrl) {
-        v.src = targetUrl;
+      if (res?.url) {
+        if (tvIframe) { tvIframe.remove(); tvIframe = null; }
+        v.src = res.url;
         v.currentTime = at;
         void v.play().catch(() => {});
+      } else if (res?.embedUrl) {
+        v.pause();
+        v.removeAttribute('src');
+        v.remove();
+        if (!tvIframe) {
+          tvIframe = document.createElement('iframe');
+          tvIframe.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:none;z-index:0;';
+          tvIframe.setAttribute('allow', 'autoplay; encrypted-media; fullscreen');
+          root?.insertBefore(tvIframe, root.firstChild);
+        }
+        tvIframe.src = res.embedUrl;
       }
     });
   } else {
+    if (tvIframe) { tvIframe.remove(); tvIframe = null; }
     const channel = LIVE_ALL.find((c) => c[1] === P?.label || c[0] === P?.label);
     const url = channel?.[5] || 'https://tsports.live/live.m3u8';
     v.src = url;
@@ -70,6 +83,10 @@ export function close() {
   v.pause();
   v.removeAttribute('src');
   v.load(); // release the decoder
+  if (tvIframe) {
+    tvIframe.remove();
+    tvIframe = null;
+  }
   root?.remove();
   root = null;
   P = null;
@@ -128,7 +145,11 @@ export function draw() {
  <div class="pmid"><div class="pb" data-f data-do="seek" data-d="-10">${I('rewind-10')}</div><div class="pb big" data-f data-do="ptoggle">${I(playing ? 'pause' : 'play')}</div><div class="pb" data-f data-do="seek" data-d="10">${I('fast-forward-10')}</div></div>
  <div class="pbot"><div class="row2"><div class="pb" data-f data-do="pmenu" data-m="sub">${I('subtitles-outline')}</div><div class="pb" data-f data-do="pmenu" data-m="audio">${I('waveform')}</div>${sr ? `<div class="pb" data-f data-do="pmenu" data-m="eps">${I('playlist-play')}</div><div class="pb" data-f data-do="pprev">${I('skip-previous')}</div><div class="pb" data-f data-do="pnext">${I('skip-next')}</div>` : ''}</div>
  <div class="seek" data-f data-do="seekbar"><b id="pbar"></b></div><div class="tm"><span id="pt">${p.live ? 'LIVE' : ''}</span><span id="pd"></span></div></div></div><div class="psub" id="psub"></div>${p.menu ? menuHtml() : ''}`;
-  root.insertBefore(el(), root.firstChild);
+  if (tvIframe) {
+    if (!root.contains(tvIframe)) root.insertBefore(tvIframe, root.firstChild);
+  } else {
+    root.insertBefore(el(), root.firstChild);
+  }
   focus(root.querySelector<HTMLElement>(p.menu ? '.menu [data-f]' : '[data-do="ptoggle"]'));
   tick();
   showUi();

@@ -20,6 +20,16 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(com.mythbrix.cinetor.plugins.CinetorNativePlugin.class);
         super.onCreate(savedInstanceState);
 
+        WebView webView = getBridge().getWebView();
+        if (webView != null) {
+            android.webkit.WebSettings settings = webView.getSettings();
+            settings.setMediaPlaybackRequiresUserGesture(false);
+            settings.setDomStorageEnabled(true);
+            settings.setDatabaseEnabled(true);
+            settings.setJavaScriptCanOpenWindowsAutomatically(true);
+            settings.setMixedContentMode(android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        }
+
         getBridge().getWebView().setWebViewClient(new BridgeWebViewClient(getBridge()) {
             @Nullable
             @Override

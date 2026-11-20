@@ -51,8 +51,24 @@ function Seek({ land, onFs }: { land: boolean; onFs: () => void }) {
 }
 
 export function Vcore({ land, onFs }: { land: boolean; onFs: () => void }) {
-  const s = pl.get(), p = s.st;
+  const s = useStore(pl), p = s.st;
   const isSer = !s.live && p.mediaType === 'tv';
+
+  if (s.embedUrl) {
+    return (
+      <>
+        <VideoHost fit={p.fit} hue={s.hue} />
+        <div class="pl vg-top" style="pointer-events:auto;z-index:10;background:linear-gradient(rgba(0,0,0,0.8),transparent);">
+          <span class="vg-back" role="button" aria-label="Back" onClick={act(land ? back : stop)}><I n="arrow-left" /></span>
+          <div class="vg-title"><b>{s.live ? s.label : p.title}</b>{isSer && <small>S{p.season} · E{p.episode}</small>}</div>
+          <span class="vg-fs" role="button" aria-label={land ? 'Exit fullscreen' : 'Fullscreen'} onClick={act(land ? back : onFs)}>
+            <I n={land ? 'fullscreen-exit' : 'fullscreen'} />
+          </span>
+        </div>
+      </>
+    );
+  }
+
   const lock = <Pill ic={p.locked ? 'lock' : 'lock-open-variant-outline'} on={p.locked} label="Lock" fn={() => (patch({ locked: !p.locked }), setUi({ sheet: false }))} />;
   const base = (
     <>

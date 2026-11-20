@@ -152,7 +152,15 @@ export function startAt(t: Title, season: number, episode: number, o: { seasons?
       if (v.readyState >= 1) seek();
       else v.addEventListener('loadedmetadata', seek, { once: true });
       v.playbackRate = pl.get().st.speed;
-      v.play().then(() => keepAwake(true), () => patch({ playing: false }));
+      const onErr = () => {
+        v.removeEventListener('error', onErr);
+        if (res?.embedUrl) pl.set({ embedUrl: res.embedUrl });
+      };
+      v.addEventListener('error', onErr, { once: true });
+      v.play().then(() => keepAwake(true), () => {
+        if (res?.embedUrl) pl.set({ embedUrl: res.embedUrl });
+        else patch({ playing: false });
+      });
       return;
     }
 

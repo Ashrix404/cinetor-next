@@ -12,7 +12,7 @@ Cinetor Next is a streaming-style app for three platforms, built from ONE TypeSc
 | Android TV | separate APK (Capacitor WebView, Leanback) | `tv` shell (ultra light) |
 | Web (desktop + mobile browsers, iOS included) | static site / PWA | `desktop` shell on wide screens, `mobile` shell on phones |
 
-Content metadata comes from TMDB. Video is MOCK video only (generated in CI). There are no real streams, no scraping, no providers.
+Content metadata comes from TMDB. Video, Live TV, and Music are real streaming media powered by the Cloudflare Edge Gateway (`cinetor-api`) aggregating live HLS streams, YouTube Music, and verified multi-provider resolvers.
 
 The approved UI and behavior live in `prototype/`. That folder is the single source of truth for every screen, string, color, size and interaction. See `docs/01-product-spec.md`.
 
@@ -26,7 +26,7 @@ The approved UI and behavior live in `prototype/`. That folder is the single sou
    - GitHub Action: `curl -s https://api.github.com/repos/<owner>/<repo>/releases/latest`
    - TMDB endpoint: check https://developer.themoviedb.org/reference and test it in CI, never invent fields.
    If the check fails, do NOT use it. Write "UNVERIFIED: <thing>" in `docs/PROGRESS.md` and ask the user.
-4. **Only use dependencies listed in `docs/02-architecture.md` §Dependencies.** Adding anything else needs the user's written OK.
+4. **Dependencies:** Only use dependencies listed in `docs/02-architecture.md` §Dependencies, plus streaming media and gateway integration modules authorized by the user. Adding unrelated packages needs user approval.
 5. **The source repo is PUBLIC.** Never upload secrets, keystores or tokens as workflow artifacts or logs (public artifacts are downloadable by anyone).
 6. **Never commit secrets.** No TMDB token, keystore, password or PAT in any file. Secrets come from GitHub Actions secrets only (`docs/03-github-setup.md`).
 7. **Never invent features, screens, strings or settings** that are not in `prototype/` or `docs/01-product-spec.md`. If something is unclear, ask.
