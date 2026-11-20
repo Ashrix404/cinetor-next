@@ -12,3 +12,4 @@ config.js
 *.keystore
 *.b64
 media/out/
+android/app/src/main/jniLibs/

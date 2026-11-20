@@ -24,6 +24,9 @@ jobs:
         with: { distribution: temurin, java-version: 21 }
       - uses: android-actions/setup-android@v4
       - uses: gradle/actions/setup-gradle@v6
+      - uses: actions/setup-go@v7
+        with: { go-version: 1.26.11, cache: false }
+      - run: bash scripts/build-net-bins.sh
       - run: npm ci && npm run typecheck && npm test && npm run build:web && npm run size
         env:
           TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}

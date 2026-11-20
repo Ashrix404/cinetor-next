@@ -22,7 +22,7 @@ final class Updater {
         if (!dir.exists() && !dir.mkdirs()) throw new Exception("cannot create cache dir");
         File out = new File(dir, "cinetor-update.apk");
         MessageDigest md = MessageDigest.getInstance("SHA-256");
-        HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
+        HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection(Net.get(ctx).proxy());
         c.setInstanceFollowRedirects(true);
         c.setConnectTimeout(20000);
         c.setReadTimeout(30000);

@@ -18,8 +18,8 @@ import java.io.OutputStream;
  * a user-picked SAF folder, MediaStore Downloads (API 29+), or public Downloads (API 26–28).
  */
 final class FileSink {
-    /** relPath like "Download/Cinetor/Comics/Name - Chapter 214.pdf". Returns a display path. */
-    static String publish(Context ctx, File src, String relPath, String mime, String treeUri) throws Exception {
+    /** relPath like "Download/Cinetor/Comics/Name - Chapter 214.pdf". Returns {display path, playable uri}. */
+    static String[] publish(Context ctx, File src, String relPath, String mime, String treeUri) throws Exception {
         String name = relPath.substring(relPath.lastIndexOf('/') + 1);
         String dir = relPath.contains("/") ? relPath.substring(0, relPath.lastIndexOf('/')) : "Download/Cinetor";
         String sub = dir.endsWith("/Comics") ? "Comics" : dir.endsWith("/Music") ? "Music" : "";
@@ -39,7 +39,7 @@ final class FileSink {
             if (f == null) throw new Exception("cannot create file");
             copy(src, cr.openOutputStream(f.getUri()));
             src.delete();
-            return (root.getName() != null ? root.getName() : "Folder") + "/" + (sub.isEmpty() ? "" : sub + "/") + name;
+            return new String[] { (root.getName() != null ? root.getName() : "Folder") + "/" + (sub.isEmpty() ? "" : sub + "/") + name, f.getUri().toString() };
         }
         if (Build.VERSION.SDK_INT >= 29) {
             ContentValues v = new ContentValues();
@@ -51,7 +51,7 @@ final class FileSink {
             if (uri == null) throw new Exception("MediaStore insert failed");
             copy(src, cr.openOutputStream(uri));
             src.delete();
-            return rel + "/" + name;
+            return new String[] { rel + "/" + name, uri.toString() };
         }
         File base = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
         File out = new File(new File(base, "Cinetor" + (sub.isEmpty() ? "" : "/" + sub)), name);

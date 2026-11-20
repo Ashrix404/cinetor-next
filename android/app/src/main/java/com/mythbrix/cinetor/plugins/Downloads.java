@@ -35,7 +35,7 @@ public final class Downloads {
     }
 
     static final class Job {
-        String id, url, rel, tree, status = "queued", path, error;
+        String id, url, rel, tree, status = "queued", path, uri, error;
         int conn;
         long len;
         boolean ranges = true;
@@ -78,7 +78,7 @@ public final class Downloads {
                 Job j = new Job();
                 j.id = o.getString("id"); j.url = o.getString("url"); j.rel = o.getString("rel");
                 j.tree = o.optString("tree", null); j.conn = o.optInt("conn", 16); j.len = o.optLong("len");
-                j.ranges = o.optBoolean("ranges", true); j.path = o.optString("path", null);
+                j.ranges = o.optBoolean("ranges", true); j.path = o.optString("path", null); j.uri = o.optString("uri", null);
                 j.status = o.optString("status", "paused");
                 if (j.status.equals("running") || j.status.equals("queued")) j.status = "paused"; // after restart
                 JSONArray s = o.optJSONArray("segs");
@@ -99,7 +99,7 @@ public final class Downloads {
             for (Job j : jobs.values()) {
                 JSONObject o = new JSONObject();
                 o.put("id", j.id); o.put("url", j.url); o.put("rel", j.rel); o.put("tree", j.tree); o.put("conn", j.conn);
-                o.put("len", j.len); o.put("ranges", j.ranges); o.put("status", j.status); o.put("path", j.path);
+                o.put("len", j.len); o.put("ranges", j.ranges); o.put("status", j.status); o.put("path", j.path); o.put("uri", j.uri);
                 JSONArray s = new JSONArray();
                 for (Seg g : j.segs) s.put(new JSONArray().put(g.a).put(g.b).put(g.got));
                 o.put("segs", s);
@@ -189,7 +189,9 @@ public final class Downloads {
                     for (Seg s : j.segs) if (!s.done()) throw new Exception(j.error != null ? j.error : "incomplete");
                     File tmp = temp(j);
                     if (tmp.length() != j.len) throw new Exception("length mismatch");
-                    j.path = FileSink.publish(ctx, tmp, j.rel, mime(j.rel), j.tree);
+                    String[] pub = FileSink.publish(ctx, tmp, j.rel, mime(j.rel), j.tree);
+                    j.path = pub[0];
+                    j.uri = pub[1];
                     j.status = "done";
                     save();
                     emit(j, true);
@@ -209,7 +211,7 @@ public final class Downloads {
     }
 
     private void probe(Job j) throws Exception {
-        HttpURLConnection c = (HttpURLConnection) new URL(j.url).openConnection();
+        HttpURLConnection c = (HttpURLConnection) new URL(j.url).openConnection(Net.get(ctx).proxy());
         c.setRequestProperty("Range", "bytes=0-0");
         c.setConnectTimeout(15000);
         c.connect();
@@ -236,7 +238,7 @@ public final class Downloads {
         HttpURLConnection c = null;
         try (RandomAccessFile raf = new RandomAccessFile(temp(j), "rw")) {
             long from = s.a + s.got;
-            c = (HttpURLConnection) new URL(j.url).openConnection();
+            c = (HttpURLConnection) new URL(j.url).openConnection(Net.get(ctx).proxy());
             if (j.ranges) c.setRequestProperty("Range", "bytes=" + from + "-" + s.b);
             c.setConnectTimeout(15000);
             c.setReadTimeout(30000);
@@ -282,6 +284,7 @@ public final class Downloads {
         p.put("bytesPerSec", Math.max(0, bps));
         p.put("status", j.status);
         if (j.path != null) p.put("path", j.path);
+        if (j.uri != null) p.put("uri", j.uri);
         if (j.error != null) p.put("error", j.error);
         return p;
     }
