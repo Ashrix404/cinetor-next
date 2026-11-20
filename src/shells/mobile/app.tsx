@@ -10,6 +10,7 @@ import { closePlayerForBack, pl } from './player/store';
 import { Pip } from './player/pip';
 import { isNative } from '../../core/platform';
 import { createStore } from '../../core/store';
+import { UpdateDialog, upd } from './updates';
 
 export function App() {
   useStore(ui);
@@ -18,6 +19,7 @@ export function App() {
   useStore(library.store);
   useStore(adult.store);
   useStore(pl);
+  useStore(upd);
   useStore(routerVersion);
   const route = cur();
   const S = screens[route.name] || screens.home;
@@ -34,6 +36,7 @@ export function App() {
       {!def.land && <Pip />}
       <Drawer />
       <PinDialog />
+      <UpdateDialog />
       <Splash />
     </div>
   );
