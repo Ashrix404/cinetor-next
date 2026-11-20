@@ -5,6 +5,8 @@ import { useStore } from '../mobile/ui/hooks';
 import { createStore } from '../../core/store';
 import { dlStore, speeds } from '../../core/downloads';
 import { adult, back, cur, library, prefs, root, router, setUi, ui } from './state';
+import { isAdultTitle } from '../../core/adult';
+import type { Title } from '../../core/tmdb';
 import { Ic, Mark } from './ui';
 import { dpl, Player } from './player';
 import { Detail, Feed, Library, ListPage, Music, Person, Search, TvPage } from './pages';

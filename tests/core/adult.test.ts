@@ -8,10 +8,10 @@ describe('adult classifier & isolation', () => {
     setAdultUnlocked(false);
   });
 
-  const normalMovie: Title = { id: 101, mediaType: 'movie', title: 'Inception', overview: 'A thief steals corporate secrets through dream-sharing.', genreIds: [28, 878] };
-  const nsfwMovie: Title = { id: 202, mediaType: 'movie', title: 'Erotic Nights', overview: 'A romantic erotic drama in Paris.', genreIds: [10749] };
-  const minorRiskMovie: Title = { id: 303, mediaType: 'movie', title: 'High School Secrets', overview: 'Teen students in drama class.', genreIds: [18] };
-  const kidAnimation: Title = { id: 404, mediaType: 'movie', title: 'Cartoon Fun', overview: 'Fun animated tale', genreIds: [16, 10751] };
+  const normalMovie: Title = { id: 101, mediaType: 'movie', title: 'Inception', overview: 'A thief steals corporate secrets through dream-sharing.', genreIds: [28, 878], poster: null, backdrop: null, rating: 8, year: '2026' };
+  const nsfwMovie: Title = { id: 202, mediaType: 'movie', title: 'Erotic Nights', overview: 'A romantic erotic drama in Paris.', genreIds: [10749], poster: null, backdrop: null, rating: 7, year: '2026' };
+  const minorRiskMovie: Title = { id: 303, mediaType: 'movie', title: 'High School Secrets', overview: 'Teen students in drama class.', genreIds: [18], poster: null, backdrop: null, rating: 6, year: '2026' };
+  const kidAnimation: Title = { id: 404, mediaType: 'movie', title: 'Cartoon Fun', overview: 'Fun animated tale', genreIds: [16, 10751], poster: null, backdrop: null, rating: 8, year: '2026' };
 
   it('identifies nsfw text and adult titles', () => {
     expect(isAdultTitle(normalMovie)).toBe(false);
