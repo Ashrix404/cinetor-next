@@ -35,14 +35,13 @@ export interface PlayerState {
 - Portrait inline: swipe down → PiP, swipe up → fullscreen. NO brightness/volume gestures here.
 - Fullscreen (mobile APK + mobile browsers): vertical drag on the left half = brightness, on the right half = volume. Show a pill with an icon and a % value. Ignore drags that start on a control.
 
+**User decision 2026-11-20: brightness/volume gestures exist ONLY in the Android APK. Browsers (mobile web, iOS, desktop) have no brightness/volume gesture or wheel control.**
+
 | Platform | Brightness | Volume |
 |---|---|---|
-| Android APK | `CinetorNative.setBrightness({value})` (window brightness, reset to system on exit) | `CinetorNative.setVolume({value})` (STREAM_MUSIC, no system UI) |
-| Android Chrome (web) | CSS: `video{filter:brightness(b)}` with b in 0.3–1.5 plus a dim overlay below 1 | `video.volume = v` |
-| iOS Safari (web) | same CSS method | `video.volume` is read-only on iOS. Use Web Audio: `ctx.createMediaElementSource(video)` → `GainNode` → destination. The AudioContext must start inside a user gesture. The video needs `crossOrigin="anonymous"` (GitHub Pages sends `Access-Control-Allow-Origin: *`). |
-| Desktop | mouse wheel over the left or right half does the same; keyboard ↑/↓ = volume | same |
+| Android APK | `CinetorNative.setBrightness({value})` — the real screen brightness of the app window (`WindowManager.LayoutParams.screenBrightness`), reset to the system value on exit | `CinetorNative.setVolume({value})` — the real Android media volume (STREAM_MUSIC) |
+| Web (all browsers) | none | none (use the device / OS volume) |
 
-Say this in About › Help: in a browser, brightness only changes the video picture, not the phone screen.
 
 ## Fullscreen and orientation
 
