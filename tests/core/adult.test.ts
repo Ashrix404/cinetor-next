@@ -1,5 +1,20 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { adultOnly, isAdultTitle, isMinorRisk, resetAdultRegistry, sanitize, setAdultUnlocked, visible } from '../../src/core/adult';
+import {
+  ADULT_BLOCKED_GENRES,
+  adultOnly,
+  adultPolicy,
+  isAdultId,
+  isAdultTitle,
+  isAdultUnlocked,
+  isMinorRisk,
+  isNsfwText,
+  markAdult,
+  onAdultLock,
+  resetAdultRegistry,
+  sanitize,
+  setAdultUnlocked,
+  visible,
+} from '../../src/core/adult';
 import type { Title } from '../../src/core/tmdb';
 
 describe('adult classifier & isolation', () => {
@@ -16,6 +31,8 @@ describe('adult classifier & isolation', () => {
   it('identifies nsfw text and adult titles', () => {
     expect(isAdultTitle(normalMovie)).toBe(false);
     expect(isAdultTitle(nsfwMovie)).toBe(true);
+    expect(isNsfwText('An erotic adventure')).toBe(true);
+    expect(isNsfwText('A peaceful journey')).toBe(false);
   });
 
   it('detects minor risk keywords', () => {
@@ -47,5 +64,64 @@ describe('adult classifier & isolation', () => {
     // Unlocked
     setAdultUnlocked(true);
     expect(visible(items)).toEqual([normalMovie, adultItem]);
+  });
+
+  it('adultPolicy enforces strict isolation for adult items', () => {
+    // Normal title has full playback features allowed
+    const normalPol = adultPolicy(normalMovie);
+    expect(normalPol).toEqual({
+      adult: false,
+      allowPip: true,
+      allowBackground: true,
+      showMediaMeta: true,
+      recordHistory: true,
+    });
+
+    // Adult title while locked: no PiP, no background, no media meta, no history
+    const adultPolLocked = adultPolicy(nsfwMovie);
+    expect(adultPolLocked).toEqual({
+      adult: true,
+      allowPip: false,
+      allowBackground: false,
+      showMediaMeta: false,
+      recordHistory: false,
+    });
+
+    // Adult title while unlocked: record history is allowed, but PiP/background/media meta still disabled
+    setAdultUnlocked(true);
+    const adultPolUnlocked = adultPolicy(nsfwMovie);
+    expect(adultPolUnlocked).toEqual({
+      adult: true,
+      allowPip: false,
+      allowBackground: false,
+      showMediaMeta: false,
+      recordHistory: true,
+    });
+  });
+
+  it('persists adult IDs and recognizes isAdultId across media types', () => {
+    expect(isAdultId(999)).toBe(false);
+    markAdult([{ id: 999, mediaType: 'movie' }, { id: 888, mediaType: 'tv' }]);
+    expect(isAdultId(999)).toBe(true);
+    expect(isAdultId(888)).toBe(true);
+    expect(isAdultTitle({ id: 999, mediaType: 'movie', title: 'Clean Name', overview: 'Clean description' })).toBe(true);
+  });
+
+  it('onAdultLock notifies subscribers when lock state toggles', () => {
+    const states: boolean[] = [];
+    const unsub = onAdultLock((v) => states.push(v));
+
+    setAdultUnlocked(true);
+    expect(isAdultUnlocked()).toBe(true);
+    setAdultUnlocked(false);
+    expect(isAdultUnlocked()).toBe(false);
+    unsub();
+    setAdultUnlocked(true);
+
+    expect(states).toEqual([true, false]);
+  });
+
+  it('blocks animation, family, and kids genres from adult section', () => {
+    expect(ADULT_BLOCKED_GENRES).toEqual([16, 10751, 10762]);
   });
 });

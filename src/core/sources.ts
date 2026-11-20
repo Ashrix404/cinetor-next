@@ -18,6 +18,10 @@ export interface MediaSrc {
   headers?: Record<string, string>;
   /** bytes, when the gateway reported it */
   size?: number;
+  server?: string;
+  serverId?: string;
+  proxyUrl?: string;
+  isDirect?: boolean;
 }
 
 const IMAGE = /\.(jpe?g|png|webp|gif|bmp|svg)$|\/null$/i;
@@ -102,6 +106,9 @@ export function toMediaSrc(x: any, isDirect: (u: string, flag?: boolean) => bool
   const headers = x.headers && typeof x.headers === 'object' ? (x.headers as Record<string, string>) : undefined;
   const out: MediaSrc = { url: x.url, kind: kindOf(x.url, x.type), quality: Number(x.quality) || 0, name: String(x.name || 'Direct'), headers };
   if (Number(x.size) > 0) out.size = Number(x.size);
+  if (x.server) out.server = String(x.server);
+  if (x.proxyUrl) out.proxyUrl = String(x.proxyUrl);
+  if (typeof x.isDirect === 'boolean') out.isDirect = x.isDirect;
   return out;
 }
 

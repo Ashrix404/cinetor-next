@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { enginesFor, isHlsUrl, proxify } from '../../src/core/playback';
+import { enginesFor, isHlsUrl, proxify, preserveTimestamp, restoreTimestamp, getActiveEngine, getActiveHls } from '../../src/core/playback';
 import { isPlaylist, LIVE, mergeGatewayChannels, pickChannel, usableChannelUrl } from '../../src/core/live';
 import { buildEmbeds, hostOf, nextUntried } from '../../src/core/embeds';
 import { parseResolve } from '../../src/core/stream-resolver';
+import { playDirect } from '../../src/core/direct-play';
+import type { MediaSrc } from '../../src/core/sources';
 
 describe('playback engines', () => {
   const native = { nativeHls: true, mse: true }, chrome = { nativeHls: false, mse: true }, old = { nativeHls: false, mse: false };
@@ -19,6 +21,43 @@ describe('playback engines', () => {
     expect(p).toContain('/v1/proxy?url=https%3A%2F%2Fcdn.test%2Flive%2Fa.m3u8');
     expect(p).toContain('referer=https%3A%2F%2Fcdn.test%2F');
     expect(proxify('https://cdn.test/a.m3u8', undefined, true)).toMatch(/&_=\d+$/);
+  });
+  it('preserves timestamp from video element or fallback', () => {
+    expect(preserveTimestamp(null, 15)).toBe(15);
+    const fakeVideo = { currentTime: 42.5 } as HTMLVideoElement;
+    expect(preserveTimestamp(fakeVideo, 0)).toBe(42.5);
+    const zeroVideo = { currentTime: 0 } as HTMLVideoElement;
+    expect(preserveTimestamp(zeroVideo, 30)).toBe(30);
+    const nanVideo = { currentTime: NaN } as HTMLVideoElement;
+    expect(preserveTimestamp(nanVideo, 20)).toBe(20);
+  });
+  it('restores timestamp on ready or loadedmetadata', () => {
+    let sought = 0;
+    const readyVideo = {
+      readyState: 2,
+      set currentTime(val: number) { sought = val; },
+      get currentTime() { return sought; },
+      addEventListener: () => {},
+    } as unknown as HTMLVideoElement;
+    restoreTimestamp(readyVideo, 85);
+    expect(sought).toBe(85);
+
+    let eventCb: (() => void) | undefined;
+    let notReadySought = 0;
+    const notReadyVideo = {
+      readyState: 0,
+      set currentTime(val: number) { notReadySought = val; },
+      get currentTime() { return notReadySought; },
+      addEventListener: (_ev: string, cb: () => void) => { eventCb = cb; },
+    } as unknown as HTMLVideoElement;
+    restoreTimestamp(notReadyVideo, 120);
+    expect(notReadySought).toBe(0);
+    eventCb?.();
+    expect(notReadySought).toBe(120);
+  });
+  it('tracks active engine and hls instance', () => {
+    expect(getActiveEngine()).toBeNull();
+    expect(getActiveHls()).toBeNull();
   });
 });
 
@@ -96,5 +135,18 @@ describe('embed players', () => {
   });
   it('without the gateway there are still embed players (they need no gateway)', () => {
     expect(parseResolve({ sources: [] }, { type: 'movie', id: 603 })?.embeds.length).toBeGreaterThan(0);
+  });
+});
+
+describe('direct-play multi-server fallback', () => {
+  it('throws when direct media list is empty', async () => {
+    const v = {} as HTMLVideoElement;
+    await expect(playDirect(v, [])).rejects.toThrow('no direct source');
+  });
+
+  it('aborts when alive() check returns false', async () => {
+    const v = {} as HTMLVideoElement;
+    const list: MediaSrc[] = [{ url: 'https://cdn.test/1.m3u8', kind: 'hls', quality: 1080, name: 'S1' }];
+    await expect(playDirect(v, list, { alive: () => false })).rejects.toThrow('cancelled');
   });
 });

@@ -1,6 +1,7 @@
 // Direct media playback for every shell: native <video>, hls.js (loaded on demand), and the gateway
 // proxy for streams that do not send CORS headers. Each attempt has a timeout, so a dead stream
-// never leaves the player waiting forever.
+// never leaves the player waiting forever. Automatic HLS.js error recovery, seamless engine failover,
+// and timestamp preservation across engine and server switches.
 import { GATEWAY_BASE } from './config';
 
 /** hls.js 1.7.4 (verified on npm 2026-11-20). Loaded from jsDelivr only when the browser has no native
@@ -47,6 +48,41 @@ export function mediaEnv(v: HTMLVideoElement) {
   return { nativeHls, mse };
 }
 
+// ---- Timestamp Preservation Helpers -------------------------------------------------------------
+/** Safely extract current timestamp from a video element, or return fallback. */
+export function preserveTimestamp(v?: HTMLVideoElement | null, fallback = 0): number {
+  if (!v) return fallback;
+  try {
+    const cur = v.currentTime;
+    if (typeof cur === 'number' && !isNaN(cur) && cur > 0) {
+      return cur;
+    }
+  } catch {
+    /* ignore */
+  }
+  return fallback;
+}
+
+/** Restore playback timestamp onto a video element once metadata or canplay is available. */
+export function restoreTimestamp(v: HTMLVideoElement, at: number): void {
+  if (!v || typeof at !== 'number' || isNaN(at) || at <= 0) return;
+  const seek = () => {
+    try {
+      if (Math.abs(v.currentTime - at) > 0.3) {
+        v.currentTime = at;
+      }
+    } catch {
+      /* not seekable yet */
+    }
+  };
+  if (v.readyState >= 1) {
+    seek();
+  } else {
+    v.addEventListener('loadedmetadata', seek, { once: true });
+    v.addEventListener('canplay', seek, { once: true });
+  }
+}
+
 // ---- hls.js loader -------------------------------------------------------------------------------
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type HlsCtor = any; // hls.js is loaded at runtime from the CDN; no type package is bundled
@@ -55,6 +91,7 @@ export function loadHlsJs(): Promise<HlsCtor> {
   const w = globalThis as any;
   if (w.Hls) return Promise.resolve(w.Hls);
   if (hlsP) return hlsP;
+  if (typeof document === 'undefined') return Promise.reject(new Error('no document'));
   hlsP = new Promise((res, rej) => {
     const s = document.createElement('script');
     s.src = HLS_JS_URL;
@@ -92,6 +129,16 @@ function proxyLoader(Hls: HlsCtor, referer?: string) {
 
 // ---- attach --------------------------------------------------------------------------------------
 let hls: any = null;
+let activeEngine: Engine | null = null;
+
+export function getActiveHls() {
+  return hls;
+}
+
+export function getActiveEngine(): Engine | null {
+  return activeEngine;
+}
+
 /** Stop any hls.js instance bound to the shared <video>. */
 export function detach(v?: HTMLVideoElement) {
   if (hls) {
@@ -102,6 +149,7 @@ export function detach(v?: HTMLVideoElement) {
     }
     hls = null;
   }
+  activeEngine = null;
   if (v) {
     v.pause();
     v.removeAttribute('src');
@@ -137,57 +185,191 @@ function waitFrames(v: HTMLVideoElement, ms: number, onFatal: (cb: (e: Error) =>
   });
 }
 
+export interface PlayUrlOptions {
+  at?: number;
+  timeoutMs?: number;
+  autoplay?: boolean;
+  referer?: string;
+  stallTimeoutMs?: number;
+  onEngineChange?: (engine: Engine) => void;
+  onFailover?: (engine: Engine, fromEngine: Engine, err: Error) => void;
+  onStall?: () => void;
+  onError?: (err: Error) => void;
+}
+export type PlayOptions = PlayUrlOptions;
+
 let token = 0;
+
 /**
  * Play `url` in `v`, trying each engine in order with a timeout. Resolves with the engine that
  * produced frames; rejects when every engine failed (caller shows the error card / next embed player).
+ * Seamlessly fails over from native to hls.js to hls-proxy with automatic recovery and timestamp preservation.
  * A newer call cancels an older one (its promise rejects with 'cancelled').
  */
 export async function playUrl(
   v: HTMLVideoElement,
   url: string,
-  o: { at?: number; timeoutMs?: number; autoplay?: boolean; referer?: string } = {}
+  o: PlayUrlOptions = {}
 ): Promise<Engine> {
   const my = ++token;
   const ms = o.timeoutMs ?? 15000;
+  const stallMs = o.stallTimeoutMs ?? 8000;
+  let targetTime = preserveTimestamp(v, o.at ?? 0);
   let last: Error = new Error('no engine');
-  for (const eng of enginesFor(url, mediaEnv(v))) {
-    if (my !== token) throw new Error('cancelled');
-    detach(v);
-    try {
-      let fatal: (e: Error) => void = () => {};
-      if (eng === 'native') {
-        v.src = url;
-      } else {
-        const Hls = await loadHlsJs();
-        if (my !== token) throw new Error('cancelled');
-        if (!Hls.isSupported()) throw new Error('hls.js unsupported');
-        hls = new Hls(eng === 'hls-proxy' ? { loader: proxyLoader(Hls, o.referer), enableWorker: true } : { enableWorker: true });
-        hls.on(Hls.Events.ERROR, (_e: unknown, d: any) => d?.fatal && fatal(new Error('hls ' + d.details)));
-        hls.loadSource(url);
-        hls.attachMedia(v);
-      }
-      if (o.at && o.at > 1) {
-        const seek = () => {
-          try {
-            v.currentTime = o.at!;
-          } catch {
-            /* not seekable yet */
-          }
-        };
-        v.addEventListener('loadedmetadata', seek, { once: true });
-      }
-      if (o.autoplay !== false) void v.play().catch(() => {});
-      await waitFrames(v, ms, (cb) => (fatal = cb));
-      if (my !== token) throw new Error('cancelled');
-      return eng;
-    } catch (e) {
-      last = e as Error;
-      if (last.message === 'cancelled') throw last;
+  let prevEng: Engine | null = null;
+
+  // Track timestamp updates while frames play
+  const timeListener = () => {
+    if (v.currentTime > 0) {
+      targetTime = Math.max(targetTime, v.currentTime);
     }
+  };
+  v.addEventListener('timeupdate', timeListener);
+
+  try {
+    for (const eng of enginesFor(url, mediaEnv(v))) {
+      if (my !== token) throw new Error('cancelled');
+
+      // Preserve position right before detaching previous engine
+      targetTime = Math.max(targetTime, preserveTimestamp(v));
+      detach(v);
+
+      if (prevEng && o.onFailover) {
+        try {
+          o.onFailover(eng, prevEng, last);
+        } catch {
+          /* ignore callback error */
+        }
+      }
+
+      try {
+        let fatal: (e: Error) => void = () => {};
+        let stallCleanup = () => {};
+
+        if (eng === 'native') {
+          activeEngine = 'native';
+          v.src = url;
+        } else {
+          const Hls = await loadHlsJs();
+          if (my !== token) throw new Error('cancelled');
+          if (!Hls.isSupported()) throw new Error('hls.js unsupported');
+
+          const hlsConfig: any = {
+            enableWorker: true,
+            lowLatencyMode: false,
+            backBufferLength: 90,
+            startPosition: targetTime > 0 ? targetTime : -1,
+          };
+          if (eng === 'hls-proxy') {
+            hlsConfig.loader = proxyLoader(Hls, o.referer);
+          }
+
+          const hlsInstance = new Hls(hlsConfig);
+          hls = hlsInstance;
+          activeEngine = eng;
+
+          let mediaRecoveries = 0;
+          let networkRecoveries = 0;
+
+          hlsInstance.on(Hls.Events.ERROR, (_e: unknown, d: any) => {
+            if (!d) return;
+            if (d.fatal) {
+              if (d.type === Hls.ErrorTypes.NETWORK_ERROR && networkRecoveries < 2) {
+                networkRecoveries++;
+                try {
+                  hlsInstance.startLoad();
+                  return;
+                } catch {
+                  /* failover */
+                }
+              } else if (d.type === Hls.ErrorTypes.MEDIA_ERROR && mediaRecoveries < 2) {
+                mediaRecoveries++;
+                try {
+                  hlsInstance.recoverMediaError();
+                  return;
+                } catch {
+                  /* failover */
+                }
+              }
+              fatal(new Error('hls ' + (d.details || d.type)));
+            }
+          });
+
+          hlsInstance.loadSource(url);
+          hlsInstance.attachMedia(v);
+
+          if (targetTime > 0) {
+            hlsInstance.once(Hls.Events.MANIFEST_PARSED, () => {
+              restoreTimestamp(v, targetTime);
+            });
+          }
+        }
+
+        // Restore target timestamp across metadata/canplay
+        if (targetTime > 0) {
+          restoreTimestamp(v, targetTime);
+        }
+
+        if (o.autoplay !== false) {
+          void v.play().catch(() => {});
+        }
+
+        // Stall monitoring
+        if (stallMs > 0) {
+          let stallTimer: any = null;
+          const resetStall = () => {
+            if (stallTimer) {
+              clearTimeout(stallTimer);
+              stallTimer = null;
+            }
+          };
+          const onWaiting = () => {
+            resetStall();
+            stallTimer = setTimeout(() => {
+              if (my !== token) return;
+              if (hls && (activeEngine === 'hls' || activeEngine === 'hls-proxy')) {
+                try {
+                  hls.recoverMediaError();
+                } catch {
+                  /* ignore */
+                }
+              }
+              o.onStall?.();
+            }, stallMs);
+          };
+          v.addEventListener('waiting', onWaiting);
+          v.addEventListener('playing', resetStall);
+          v.addEventListener('timeupdate', resetStall);
+          stallCleanup = () => {
+            resetStall();
+            v.removeEventListener('waiting', onWaiting);
+            v.removeEventListener('playing', resetStall);
+            v.removeEventListener('timeupdate', resetStall);
+          };
+        }
+
+        await waitFrames(v, ms, (cb) => (fatal = cb));
+        stallCleanup();
+
+        if (my !== token) throw new Error('cancelled');
+
+        if (targetTime > 0) {
+          restoreTimestamp(v, targetTime);
+        }
+        o.onEngineChange?.(eng);
+        prevEng = eng;
+        return eng;
+      } catch (e) {
+        last = e as Error;
+        prevEng = eng;
+        if (last.message === 'cancelled') throw last;
+      }
+    }
+    if (my === token) detach(v);
+    throw last;
+  } finally {
+    v.removeEventListener('timeupdate', timeListener);
   }
-  if (my === token) detach(v);
-  throw last;
 }
 
 /** Cancel a pending playUrl (e.g. the player closed or switched to an embed). */

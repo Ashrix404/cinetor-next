@@ -725,6 +725,9 @@ a{color:inherit}
 /* gesture pill (seek preview / 2x / brightness / volume), error card */
 .lvl.gp{top:14%;gap:8px;padding:8px 16px;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
 .lvl.gp b{font-weight:600;font-variant-numeric:tabular-nums}.lvl.gp small{font-size:12px;opacity:.7}
+.lvl.sw-toast{top:18%;gap:10px;padding:7px 18px;background:rgba(15,23,42,.92);border:1px solid rgba(56,189,248,.5);border-radius:999px;box-shadow:0 8px 30px rgba(0,0,0,.6);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);pointer-events:none}
+.lvl.sw-toast .mi{font-size:18px;color:#38bdf8}
+.lvl.sw-toast span{font-size:13px;font-weight:600;color:#fff;letter-spacing:.2px}
 .vg-err{position:absolute;inset:0;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:16px;color:rgba(255,255,255,.9);font-size:14px;background:#05060a}
 .vg-err>.mi{font-size:38px;opacity:.8}
 .vg-err>div{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
