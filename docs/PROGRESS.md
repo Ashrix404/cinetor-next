@@ -113,6 +113,11 @@
 - **Honest gaps / UNVERIFIED (need a real device):** background playback in the APK WebView (`keepAliveForPlayback` is a no-op until proven needed); web downloads after a reload restart from 0 ("Paused · restart needed") even with OPFS; UI parity was checked by smoke tests, not by eye — check the preview links on a phone/TV.
 - **T34/T35:** `release.yml` (tag `v*` → signed 5+5 APKs, `latest.json`, GitHub release in cinetor-releases, site on gh-pages with `keep_files`), `scripts/collect-release.mjs`, PWA (`web/manifest.webmanifest`, `web/sw.js`, PNG icons, iOS meta, SW update toast, version.json poll).
 
+### U01 user requests round — 2026-11-20 (Claude Code, PR #20)
+- Requested by the user (overrides AGENTS rule 7 for these items): Downloads page redesign (settings sheet with save location + parallel connections, TMDB thumbnails, in-app offline playback via `Capacitor.convertFileSrc(content uri)` / OPFS copy on web), player controls tap-to-hide + auto-hide after 3 s, bigger landscape controls, lock moved inward (camera cut-out), swipeable rows (were `overflow:hidden`), translucent overlay bottom nav, music bar above the nav + close button, music chips under the top banner, fixed-size download sheet with ellipsis titles, popup View button layout, softer iOS-like liquid glass (no 0.5 px hairlines, color-mix fallbacks for old WebViews), C-mark launcher icons (phone + TV).
+- **Network modes (vega-app parity):** WARP mode (usque http-proxy, one-time `usque register -a`), AntiDPI mode (ByeDPI SOCKS5 + the 4 vega presets + custom args), DNS over HTTPS (Cloudflare, Google, AdGuard, Custom, Off; RFC 8484). All app traffic goes through a local Java proxy (`NetProxy`): WebView via `androidx.webkit.ProxyController`, native downloads/updater via `java.net.Proxy`. Web/desktop show the honest note that browsers cannot do this. TV: OK toggles WARP/AntiDPI and cycles DoH providers (Custom needs typing, so not on TV).
+- **UNVERIFIED (device test needed):** WARP registration and tunnel on real networks; WebView PROXY_OVERRIDE needs a recent Android System WebView (old TVs: only native traffic uses the mode); `_capacitor_content_` range playback of MediaStore files.
+
 ## Releases
 
 | Version | Date | Notes |

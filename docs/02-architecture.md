@@ -31,7 +31,9 @@ Pin the exact versions below in `package.json`. Do not add anything else without
 
 Everything else native (brightness, volume, download engine, APK install, external app chooser, storage folder picker) is in our own small Java plugin `CinetorNative` (`docs/07-native-plugin.md`). That means no unverified third-party plugins.
 
-Android native libraries (Google Maven, verified): `androidx.documentfile:documentfile:1.1.0` (SAF folder writing). The rest (`androidx.core` FileProvider, `androidx.appcompat`) comes with the Capacitor template.
+Android native libraries (Google Maven, verified): `androidx.documentfile:documentfile:1.1.0` (SAF folder writing), `androidx.webkit:webkit:1.14.0` (ProxyController for the network modes; added with the user's OK 2026-11-20).
+
+Network helper executables (user's OK 2026-11-20, vega-app parity; built from source in CI by `scripts/build-net-bins.sh`, pinned commits, MIT): `byedpi` v0.17.3 (`libciadpi.so`, AntiDPI mode) and `usque` v4.2.1 (`libusque.so`, WARP mode). Because of these, the APKs now DO contain native code per ABI. The rest (`androidx.core` FileProvider, `androidx.appcompat`) comes with the Capacitor template.
 
 CI toolchain: Node **26 LTS**, Temurin JDK **21**, Android SDK from `android-actions/setup-android`. The Capacitor 8 template uses minSdk **26**, compile and target SDK **37**. Read the real values from the generated `android/variables.gradle`, never type them from memory.
 
