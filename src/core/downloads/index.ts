@@ -176,3 +176,20 @@ export async function removeLocal(id: string) {
     /* not stored */
   }
 }
+
+/** Remove downloads from the app; with `fromStorage` the saved files are deleted too. Returns files deleted. */
+export async function removeMany(ids: string[], fromStorage: boolean): Promise<number> {
+  let n = 0;
+  for (const id of ids) {
+    const it = dlStore.get().items[id];
+    if (!it) continue;
+    if (fromStorage && it.status === 'done') {
+      if (isNative() && it.uri) {
+        const { CinetorNative } = await import('../../native/cinetor-native');
+        if ((await CinetorNative.deleteFile({ uri: it.uri }).catch(() => ({ deleted: false }))).deleted) n++;
+      } else if (it.local) n++; // the in-app copy (OPFS) is removed by cancel()
+    }
+    await cancel(id);
+  }
+  return n;
+}

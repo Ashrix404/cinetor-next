@@ -16,6 +16,7 @@ export interface CinetorNativePlugin {
   dlResume(o: { id: string }): Promise<void>;
   dlCancel(o: { id: string }): Promise<void>;
   dlList(): Promise<{ items: DlProgress[] }>;
+  deleteFile(o: { uri: string }): Promise<{ deleted: boolean }>;
   saveBytes(o: { relPath: string; base64: string; mime: string; treeUri?: string }): Promise<{ path: string; uri?: string }>;
   updateDownload(o: { url: string; sha256: string }): Promise<{ file: string }>;
   updateInstall(o: { file: string }): Promise<{ started: boolean; needsPermission?: boolean }>;

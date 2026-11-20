@@ -8,6 +8,7 @@ import { fmtTime } from '../../../core/player-model';
 import { I } from '../ui/icons';
 import { useStore } from '../ui/hooks';
 import { CarTop } from '../ui/common';
+import { usePullRefresh } from '../ui/pull';
 import { back, dlPop, nav, opt, param, setOpt, toast } from '../state';
 
 export const music = createStore('music', { title: NOW_DEFAULT.title, hue: NOW_DEFAULT.hue, playing: false, pos: 0, dur: 0, closed: false }, false);
@@ -43,6 +44,7 @@ const open = (title: string, hue: number) => (playTrack(title, hue), nav('nowpla
 export function Music() {
   const g = opt('cat_music') || 'All';
   const m = useStore(music);
+  const ptr = usePullRefresh(() => undefined);
   const chips = <div class="opts cat">{['All', ...MUSIC_GENRES].map((o) => <span key={o} class={o === g ? 'on' : ''} onClick={() => setOpt('cat_music', o)}>{o}</span>)}</div>;
   const body =
     g === 'All' ? (
@@ -63,8 +65,9 @@ export function Music() {
     );
   return (
     <div class="sp" style="flex:1;display:flex;flex-direction:column;min-height:0;position:relative">
-      <div class="scroll" style={m.closed ? '' : 'padding-bottom:calc(var(--navh) + 84px)'}>
+      <div class="scroll" style={m.closed ? '' : 'padding-bottom:calc(var(--navh) + 84px)'} {...ptr.bind}>
         <CarTop />
+        {ptr.indicator}
         {chips}
         {body}
       </div>

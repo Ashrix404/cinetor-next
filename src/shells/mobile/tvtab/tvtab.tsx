@@ -8,6 +8,7 @@ import { I } from '../ui/icons';
 import { Empty, MenuTop, Opts } from '../ui/common';
 import { back, nav, opt, param, setOpt, setUi, toast, ui } from '../state';
 import { startLive } from '../player/store';
+import { usePullRefresh } from '../ui/pull';
 
 const T0 = Date.now();
 function useTick() {
@@ -73,6 +74,7 @@ function Live() {
 
 function Sports() {
   useTick();
+  const ptr = usePullRefresh(() => undefined);
   const sp = opt('sp') || 'All', st = (opt('st') || 'Recent') as SpTab, c = spCounts(sp), fo = !!opt('favOnly'), f = ui.get().fav;
   let list = matchesFor(sp, st);
   if (st === 'All') list = list.slice().sort((x, y) => (x.st === 'live' ? 0 : 1) - (y.st === 'live' ? 0 : 1));
@@ -80,7 +82,8 @@ function Sports() {
   const mq = 'Live scores, schedules and highlights · Tap a match to open it · Switch to Live TV for more channels · ';
   return (
     <div class="szf" style="flex:1;display:flex;flex-direction:column;min-height:0">
-      <div class="scroll">
+      <div class="scroll" {...ptr.bind}>
+        {ptr.indicator}
         <div class="mqrow">
           <div class="mq"><span class="mqi">{mq + mq}</span></div>
           <span class={'favb' + (fo ? ' on' : '')} role="button" aria-label="Favorites" onClick={() => setOpt('favOnly', fo ? '' : '1')}><I n={fo ? 'star' : 'star-outline'} /></span>
@@ -101,11 +104,12 @@ function Sports() {
 
 export function TvTab() {
   const o = opt('tv') || 'Live TV';
+  const ptr = usePullRefresh(() => undefined);
   return (
     <>
       <MenuTop t="TV" />
       <div class="seg2">{['Live TV', 'Sports'].map((x) => <span key={x} class={x === o ? 'on' : ''} onClick={() => setOpt('tv', x)}><I n={x === 'Live TV' ? 'television-classic' : 'soccer'} /> {x}</span>)}</div>
-      {o === 'Sports' ? <Sports /> : <div class="scroll" style="margin-top:4px"><Live /></div>}
+      {o === 'Sports' ? <Sports /> : <div class="scroll" style="margin-top:4px" {...ptr.bind}>{ptr.indicator}<Live /></div>}
     </>
   );
 }

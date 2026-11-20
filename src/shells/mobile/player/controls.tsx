@@ -1,33 +1,51 @@
-// Player controls (prototype `vcore(land)` + docs/05-player.md control layout).
+// Player controls in the vega-app style (user request 2026-11-20): bare centre play/pause (70 px) and
+// 10 s seek arcs (54 px), a back arrow + title top-left, 40 px icon pills top-right, a bottom bar of
+// 24 px icons (+ 12 px labels in landscape) at 60 % white, a thin 2 px seek bar with an 8 px thumb.
 import { I, SV } from '../ui/icons';
 import { useStore } from '../ui/hooks';
 import { fmtTime, SPEEDS, cycleFit } from '../../../core/player-model';
-import { back, setUi, ui } from '../state';
-import { next, patch, pl, prev, ptime, seekBy, seekFrac, setSpeed, stop, togglePlay, toPip } from './store';
+import { back, setUi } from '../state';
+import { next, patch, pl, ptime, seekBy, seekFrac, setSpeed, showCtl, stop, togglePlay, toPip } from './store';
 import { VideoHost } from './video-host';
 import { SubOverlay } from './subs-overlay';
 import { GenPill } from './subs';
 
-const PBtn = ({ ic, on, act, label }: { ic: string; on?: boolean; act: () => void; label?: string }) => (
-  <span class={'pi' + (on ? ' on' : '')} role="button" aria-label={label || ic} onClick={(e) => (e.stopPropagation(), act())}><I n={ic} /></span>
-);
+const act = (fn: () => void) => (e: MouseEvent) => (e.stopPropagation(), fn(), showCtl());
 const sheet = (k: string) => () => setUi({ sheet: k, ...(k === 'episodes' ? { epsS: null } : {}), ...(k === 'subsearch' ? { sq: null } : {}) });
+
+function Pill({ ic, on, fn, label, text }: { ic?: string; on?: boolean; fn: () => void; label: string; text?: string }) {
+  return (
+    <span class={'vg-pill' + (on ? ' on' : '')} role="button" aria-label={label} onClick={act(fn)}>
+      {text ? <b class="vg-badge">{text}</b> : <I n={ic!} />}
+    </span>
+  );
+}
+function BarBtn({ ic, label, fn, on, land, text }: { ic: string; label: string; fn: () => void; on?: boolean; land: boolean; text?: string }) {
+  return (
+    <span class={'vg-btn' + (on ? ' on' : '')} role="button" aria-label={label} onClick={act(fn)}>
+      {text ? <b class="vg-txt">{text}</b> : <I n={ic} />}
+      {land && <small>{label}</small>}
+    </span>
+  );
+}
 
 function Seek({ land, onFs }: { land: boolean; onFs: () => void }) {
   const t = useStore(ptime);
   const live = pl.get().live;
   const pct = live ? 100 : t.dur ? (t.pos / t.dur) * 100 : 0;
   const click = (e: MouseEvent) => {
+    e.stopPropagation();
+    showCtl();
     if (live) return;
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
     seekFrac((e.clientX - r.left) / r.width);
   };
   return (
-    <div class="seek">
-      <span class="ptime">{live ? '' : fmtTime(t.pos)}</span>
-      <div class="trk ptrk" onClick={click}><b style={`width:${pct}%`} />{!live && <i style={`left:${pct}%`} />}</div>
-      <span>{live ? '' : fmtTime(t.dur)}</span>
-      {land ? <span class="pi" onClick={back}><I n="fullscreen-exit" /></span> : <span class="pi" style="min-width:30px;height:30px" onClick={onFs}><I n="fullscreen" /></span>}
+    <div class="vg-seek">
+      <span class="vg-time">{live ? 'LIVE' : fmtTime(t.pos)}</span>
+      <div class="vg-trk ptrk" onClick={click}><i><b style={`width:${pct}%`} /></i>{!live && <em style={`left:${pct}%`} />}</div>
+      <span class="vg-time">{live ? '' : fmtTime(t.dur)}</span>
+      <span class="vg-fs" role="button" aria-label={land ? 'Exit fullscreen' : 'Fullscreen'} onClick={act(land ? back : onFs)}><I n={land ? 'fullscreen-exit' : 'fullscreen'} /></span>
     </div>
   );
 }
@@ -35,75 +53,53 @@ function Seek({ land, onFs }: { land: boolean; onFs: () => void }) {
 export function Vcore({ land, onFs }: { land: boolean; onFs: () => void }) {
   const s = pl.get(), p = s.st;
   const isSer = !s.live && p.mediaType === 'tv';
-  const subsI = <PBtn ic={p.sub === 'Off' ? 'subtitles-outline' : 'subtitles'} on={p.sub !== 'Off'} act={sheet('subs')} label="Subtitles" />;
-  const qI = <PBtn ic="high-definition" act={sheet('quality')} label="Quality" />;
-  const epI = isSer && (
-    <>
-      <PBtn ic="playlist-play" act={sheet('episodes')} label="Episodes" />
-      <PBtn ic="skip-previous" act={prev} label="Previous" />
-      <PBtn ic="skip-next" act={next} label="Next" />
-    </>
-  );
-  const spd = <span class="pi" onClick={(e) => (e.stopPropagation(), setSpeed(SPEEDS[(SPEEDS.indexOf(p.speed) + 1) % SPEEDS.length]))}>{p.speed}×</span>;
-  const pipI = <PBtn ic="picture-in-picture-bottom-right" act={toPip} label="Picture in picture" />;
-  const dots = <PBtn ic="dots-vertical" act={sheet('settings')} label="More" />;
-  const bgI = <PBtn ic="headphones" on={p.bgPlay} act={() => patch({ bgPlay: !p.bgPlay })} label="Background play" />;
-  const lockI = (
-    <div class={'pl rm' + (land ? ' lk' : '')}>
-      <PBtn ic={p.locked ? 'lock' : 'lock-open-variant-outline'} on={p.locked} act={() => (patch({ locked: !p.locked }), setUi({ sheet: false }))} label="Lock" />
-    </div>
-  );
-  const center = (
-    <div class="pl c">
-      <span class="sk" onClick={(e) => (e.stopPropagation(), seekBy(-10))}><SV n="rew10" /></span>
-      <div class="big" onClick={(e) => (e.stopPropagation(), togglePlay())}><I n={p.playing ? 'pause' : 'play'} /></div>
-      <span class="sk" onClick={(e) => (e.stopPropagation(), seekBy(10))}><SV n="fwd10" /></span>
-    </div>
-  );
+  const lock = <Pill ic={p.locked ? 'lock' : 'lock-open-variant-outline'} on={p.locked} label="Lock" fn={() => (patch({ locked: !p.locked }), setUi({ sheet: false }))} />;
   const base = (
     <>
       <VideoHost fit={p.fit} hue={s.hue} />
+      <div class="vg-shade" />
       {p.bgPlay && <div class="bgmark"><I n="headphones" /></div>}
       <SubOverlay mode={land ? 'l' : 'p'} />
       <GenPill />
     </>
   );
-  if (p.locked) return <>{base}{lockI}</>;
-  if (!land)
-    return (
-      <>
-        {base}
-        <div class="pl t">
-          <span class="ibtn" role="button" aria-label="Back" onClick={stop}><I n="arrow-left" /></span>
-          <div style="flex:1" />
-          <div class="grp">{bgI}{qI}{spd}{pipI}{dots}</div>
-        </div>
-        {lockI}
-        {center}
-        <div class="pl bl">{subsI}{epI}</div>
-        <div class="pl b"><Seek land={false} onFs={onFs} /></div>
-      </>
-    );
+  if (p.locked) return <>{base}<div class="pl vg-top vg-lockonly">{lock}</div></>;
+  const bar = [
+    <BarBtn key="sub" ic={p.sub === 'Off' ? 'subtitles-outline' : 'subtitles'} on={p.sub !== 'Off'} label="Subtitle" fn={sheet('subs')} land={land} />,
+    <BarBtn key="aud" ic="waveform" label="Audio" fn={sheet('audio')} land={land} />,
+    <BarBtn key="spd" ic="speedometer" text={p.speed + '×'} label="Speed" fn={() => setSpeed(SPEEDS[(SPEEDS.indexOf(p.speed) + 1) % SPEEDS.length])} land={land} />,
+    <BarBtn key="pip" ic="picture-in-picture-bottom-right" label="PiP" fn={toPip} land={land} />,
+    ...(land ? [
+      <BarBtn key="srv" ic="server" label="Server" fn={sheet('server')} land={land} />,
+      <BarBtn key="fit" ic="aspect-ratio" label={p.fit} on={p.fit !== 'Fit'} fn={() => patch({ fit: cycleFit(p).fit })} land={land} />,
+    ] : []),
+    ...(isSer ? [
+      <BarBtn key="eps" ic="playlist-play" label="Episodes" fn={sheet('episodes')} land={land} />,
+      <BarBtn key="nxt" ic="skip-next" label="Next" fn={next} land={land} />,
+    ] : []),
+    <BarBtn key="more" ic="dots-vertical" label="More" fn={sheet('settings')} land={land} />,
+  ];
   return (
     <>
       {base}
-      <div class="pl t">
-        <span class="ibtn" role="button" aria-label="Back" onClick={back}><I n="arrow-left" /></span>
-        <div style="flex:1" />
-        <div class="grp">{qI}{spd}{pipI}{dots}</div>
+      <div class="pl vg-top">
+        <span class="vg-back" role="button" aria-label="Back" onClick={act(land ? back : stop)}><I n="arrow-left" /></span>
+        <div class="vg-title"><b>{s.live ? s.label : p.title}</b>{isSer && <small>S{p.season} · E{p.episode}</small>}</div>
+        <div class="vg-pills">
+          {lock}
+          <Pill ic="headphones" on={p.bgPlay} label="Background play" fn={() => patch({ bgPlay: !p.bgPlay })} />
+          <Pill text={p.quality >= 2160 ? '4K' : p.quality >= 1080 ? 'HD' : p.quality + ''} label="Quality" fn={sheet('quality')} />
+        </div>
       </div>
-      {lockI}
-      <div class="pl rm bgp" style="left:auto">{bgI}</div>
-      {center}
-      <div class="pl bl">
-        {subsI}
-        <PBtn ic="waveform" act={sheet('audio')} label="Audio" />
-        <PBtn ic="aspect-ratio" on={p.fit !== 'Fit'} act={() => patch({ fit: cycleFit(p).fit })} label="Resize" />
-        <PBtn ic="server" act={sheet('server')} label="Server" />
-        {epI}
+      <div class="pl vg-mid">
+        <span class="vg-seekbtn" role="button" aria-label="Back 10 seconds" onClick={act(() => seekBy(-10))}><SV n="rew10" /></span>
+        <span class="vg-play" role="button" aria-label={p.playing ? 'Pause' : 'Play'} onClick={act(togglePlay)}><I n={p.playing ? 'pause' : 'play'} /></span>
+        <span class="vg-seekbtn" role="button" aria-label="Forward 10 seconds" onClick={act(() => seekBy(10))}><SV n="fwd10" /></span>
       </div>
-      <div class="pl b"><Seek land onFs={onFs} /></div>
+      <div class="pl vg-bottom">
+        <Seek land={land} onFs={onFs} />
+        <div class="vg-bar">{bar}</div>
+      </div>
     </>
   );
 }
-export const sheetOpen = () => ui.get().sheet;
