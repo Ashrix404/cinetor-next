@@ -5,8 +5,8 @@
 | Task | State | Branch / PR | CI | Notes |
 |---|---|---|---|---|
 | SETUP | done 2026-11-20 | main | — | repos created; cinetor-next is PUBLIC (free Actions); cinetor-releases public + Pages on gh-pages; secrets set: TMDB_TOKEN, ANDROID_KEYSTORE_B64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD, RELEASE_REPO_TOKEN (fine-grained PAT, push access to cinetor-releases verified) |
-| T00 orientation | in_progress | task/T00-orientation | — | docs read, dependencies verified, repo secrets checked |
-| T01 tooling | todo | | | Tooling, three empty shells, CI |
+| T00 orientation | done 2026-11-20 | PR #1 | — | docs read, dependencies verified, repo secrets checked |
+| T01 tooling | done 2026-11-20 | PR #3 | green | tooling, 3 shells, CI, bootstrap |
 | T02 android-scaffold | todo | | | Android project via CI, flavors and multi-ABI |
 | T03 keystore | done | — | — | generated locally with openssl (PKCS12), not in CI |
 | T04 mock-media | todo | | | Mock media |
@@ -75,6 +75,11 @@
 ## Task notes
 
 <!-- For each task: plan (files, signatures, prototype functions quoted), decisions, real CI results, acceptance ticks. -->
+
+### T01 tooling — done 2026-11-20 (Claude Code)
+- Files as planned + `scripts/assemble-site.mjs` (assembles `dist/site/` from `dist/mobile` → `m/`, `dist/desktop` → `d/`, `web/*`, writes `version.json`, replaces `__VERSION__` in `sw.js`). Not in the T01 file list; needed for `build:web`.
+- `bootstrap.yml` fix: the doc's `git add -A package-lock.json android` fails as a whole when `android/` does not exist, so nothing gets committed; now adds each path only if it exists. It was merged to `main` first (PR #2) because `workflow_dispatch` needs the workflow on the default branch.
+- Acceptance: [x] bootstrap `task=lock` committed `package-lock.json` (run 44711643282). [x] CI green: typecheck, example test, 3 builds, size (tv 0.1 KB, mobile 4.8 KB, desktop 4.8 KB gz). [x] artifact `site` has `index.html`, `m/`, `d/`, `version.json`. Preview `preview/task/T01-tooling/m/` → 200.
 
 ## Releases
 

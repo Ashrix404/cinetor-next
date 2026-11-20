@@ -1,0 +1,32 @@
+{
+  "name": "cinetor-next",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "build:mobile": "vite build -c vite.mobile.config.ts",
+    "build:desktop": "vite build -c vite.desktop.config.ts",
+    "build:tv": "vite build -c vite.tv.config.ts",
+    "build:web": "npm run build:mobile && npm run build:desktop && npm run build:tv && node scripts/assemble-site.mjs",
+    "size": "node scripts/size-budget.mjs"
+  },
+  "dependencies": {
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.6.2",
+    "@capacitor/screen-orientation": "8.0.2",
+    "@capacitor/share": "8.0.3",
+    "@capacitor/status-bar": "8.0.4",
+    "preact": "11.2.0"
+  },
+  "devDependencies": {
+    "@capacitor/android": "8.6.2",
+    "@capacitor/cli": "8.6.2",
+    "@preact/preset-vite": "2.10.6",
+    "happy-dom": "21.0.4",
+    "typescript": "7.0.2",
+    "vite": "8.3.8",
+    "vitest": "5.1.1"
+  }
+}
