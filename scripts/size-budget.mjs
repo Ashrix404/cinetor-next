@@ -35,7 +35,10 @@ for (const [shell, b] of Object.entries(BUDGETS)) {
 const FORBIDDEN = [/backdrop-filter/, /(^|[^-])filter\s*:/, /box-shadow/, /transition/, /@keyframes/, /blur\(/, /@import\s+url\(/];
 const tvCss = [...walk('dist/tv'), ...walk('src/shells/tv')].filter((f) => extname(f) === '.css');
 for (const f of tvCss) {
-  const src = readFileSync(f, 'utf8').replace(/\/\*\s*splash-allowed\s*\*\/[\s\S]*?\/\*\s*end splash-allowed\s*\*\//g, '');
+  // Source CSS marks the splash with comments; minified dist CSS has no comments, so #splash rules are allowed there.
+  const src = readFileSync(f, 'utf8')
+    .replace(/\/\*\s*splash-allowed\s*\*\/[\s\S]*?\/\*\s*end splash-allowed\s*\*\//g, '')
+    .replace(/#splash[^{}]*\{[^}]*\}/g, '');
   for (const re of FORBIDDEN) if (re.test(src)) errors.push(`TV CSS rule broken in ${f}: ${re}`);
 }
 for (const f of walk('dist/tv').filter((f) => ['.html', '.js'].includes(extname(f)))) {
