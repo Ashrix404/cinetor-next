@@ -1,4 +1,6 @@
 // Section feeds, ported from the prototype `loadTmdb`, `feedRows`, `genPick` and `GEN`.
+import { sanitize } from './adult';
+import { adultSources, loadAdultPool } from './adult-source';
 import { mapTitle, tmdbGet, type Page, type RawItem, type Title } from './tmdb';
 
 export type Section = 'home' | 'anime' | 'drama' | 'comics' | 'adult';
@@ -62,7 +64,8 @@ async function list(reqs: Req[]): Promise<Title[]> {
   const r = await Promise.allSettled(reqs.map(([p, q]) => tmdbGet<Page<RawItem>>(p, q)));
   const ok = r.filter((x): x is PromiseFulfilledResult<Page<RawItem>> => x.status === 'fulfilled');
   if (!ok.length) throw (r[0] as PromiseRejectedResult).reason;
-  return dedupe(ok.flatMap((x, i) => x.value.results.map((it) => mapTitle(it, reqs[i][0].includes('/tv') ? 'tv' : 'movie'))));
+  // Non-adult feeds never contain adult/NSFW titles (src/core/adult.ts).
+  return sanitize(dedupe(ok.flatMap((x, i) => x.value.results.map((it) => mapTitle(it, reqs[i][0].includes('/tv') ? 'tv' : 'movie')))));
 }
 
 export interface LoadOpts {
@@ -94,7 +97,7 @@ export function sourcesFor(section: Section, option: string | undefined, light =
       return [disc('tv', { with_genres: '16', with_original_language: 'ja' }, n(3))];
     }
     case 'adult':
-      return [[...disc('movie', { with_genres: '27' }, n(2)), ...disc('movie', { with_genres: '53' }, n(2)), ...disc('movie', { with_genres: '10749' }, n(2))]];
+      return [adultSources(light)];
   }
 }
 
@@ -154,11 +157,15 @@ export async function loadSection(section: Section, option?: string, o: LoadOpts
   await loadGenres();
   const groups = sourcesFor(section, option, o.light);
   let pool: Title[] = [];
-  if (section === 'drama' && (option || '') === 'Pakistani Drama') {
+  if (section === 'adult') {
+    pool = await loadAdultPool(o.light);
+  } else if (section === 'drama' && (option || '') === 'Pakistani Drama') {
     const ur = await list(groups[0]).catch(() => [] as Title[]);
     pool = ur.length >= 6 ? ur : await list(groups[1]);
   } else {
     pool = await list(groups[0]);
   }
-  return buildFeed(section, option, pool, o.because);
+  // "Because you watched …" never names an adult title outside the Adult section.
+  const because = o.because && section !== 'adult' && sanitize([{ id: -1, mediaType: 'movie', title: o.because, overview: '' }]).length ? o.because : undefined;
+  return buildFeed(section, option, pool, because);
 }

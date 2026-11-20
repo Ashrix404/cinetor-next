@@ -3,6 +3,7 @@ import { createRouter, type Route } from '../../core/router';
 import { createStore } from '../../core/store';
 import { createLibrary } from '../../core/library';
 import { createAdult, startPin, type PinFlow } from '../../core/pin';
+import { installAdultRelock, setAdultUnlocked } from '../../core/adult';
 import { createSeriesSettings } from '../../core/series-settings';
 import type { Title } from '../../core/tmdb';
 
@@ -24,6 +25,12 @@ export interface DUi {
 }
 export const ui = createStore<DUi>('d-ui', { adultOk: false, pin: null, pop: '', toast: '', dls: null, reader: null, dq: 1080, da: 'Original' }, false);
 export const setUi = (p: Partial<DUi>) => ui.set(p);
+// One gate for the whole app: core lists (library, downloads) read it (src/core/adult.ts).
+ui.subscribe((s) => setAdultUnlocked(s.adultOk));
+installAdultRelock(() => {
+  ui.set({ adultOk: false, pin: null });
+  if (router.stack()[0].name === 'adult') router.root('home');
+});
 
 let tt: ReturnType<typeof setTimeout> | undefined, pt: ReturnType<typeof setTimeout> | undefined;
 export function toast(m: string) {
@@ -42,9 +49,10 @@ export const cur = (): Route => {
 };
 export const param = <T,>(k: string) => cur().params?.[k] as T | undefined;
 
-function gate(r: string): boolean {
+/** `push`: opening a page on top of the unlocked Adult section (detail, person) keeps it unlocked. */
+function gate(r: string, push = false): boolean {
   if (r !== 'adult') {
-    ui.set({ adultOk: false });
+    if (!(push && router.stack()[0].name === 'adult')) ui.set({ adultOk: false });
     return true;
   }
   if (!adult.isOn()) {
@@ -55,7 +63,7 @@ function gate(r: string): boolean {
   return true;
 }
 export function go(r: string, params: Record<string, unknown> = {}) {
-  if (!gate(r)) return;
+  if (!gate(r, true)) return;
   router.push({ name: r, params });
   scrollTo(0, 0);
 }

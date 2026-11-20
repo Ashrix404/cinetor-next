@@ -1,4 +1,5 @@
 // My Library, Continue watching and per-episode watch progress (persisted).
+import { visible } from './adult';
 import { createStore, type Store } from './store';
 import type { Title } from './tmdb';
 
@@ -25,7 +26,8 @@ export function createLibrary(store: Store<LibState> = createStore<LibState>('li
       store.set({ saved: on ? st().saved.filter((x) => x.id !== t.id) : [t, ...st().saved] });
       return !on;
     },
-    saved: () => st().saved,
+    /** Adult titles are hidden unless the Adult section is unlocked (src/core/adult.ts). */
+    saved: () => visible(st().saved),
     progress: (titleId: number, season = 1, episode = 1) => st().watch[epKey(titleId, season, episode)] || 0,
     /** Save progress; updates Continue watching (finished items ≥ 0.98 leave the row). */
     setProgress(t: Title, season: number, episode: number, p: number) {
@@ -35,7 +37,10 @@ export function createLibrary(store: Store<LibState> = createStore<LibState>('li
       const cw = v >= 0.98 ? rest : [{ title: t, season, episode, progress: v, at: Date.now() }, ...rest].slice(0, 20);
       store.set({ watch, cw });
     },
-    continueWatching: () => st().cw,
+    continueWatching: () => {
+      const ok = new Set(visible(st().cw.map((c) => c.title)).map((t) => t.id));
+      return st().cw.filter((c) => ok.has(c.title.id));
+    },
     removeContinue: (titleId: number) => store.set({ cw: st().cw.filter((c) => c.title.id !== titleId) }),
     clearContinue: () => store.set({ cw: [] }),
     clearProgress: () => store.set({ watch: {}, cw: [], read: {} }),

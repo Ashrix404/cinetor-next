@@ -1,4 +1,5 @@
 // Title details for the Info page (TMDB details + credits + videos + similar), season episodes, person credits.
+import { sanitize } from './adult';
 import { mapTitle, tmdbGet, type RawItem, type Title } from './tmdb';
 
 export interface CastMember { id: number; name: string; character: string; photo: string | null }
@@ -50,7 +51,7 @@ export function mapDetails(t: Title, d: Raw): Details {
     maturity: rating || (tv ? 'TV-14' : 'PG-13'),
     cast: ((d.credits?.cast || []) as Raw[]).slice(0, 12).map((c) => ({ id: c.id, name: c.name, character: c.character || '', photo: c.profile_path || null })),
     trailerKey: trailer ? trailer.key : null,
-    similar: ((d.similar?.results || []) as RawItem[]).map((x) => mapTitle(x, t.mediaType)).filter((x) => x.poster).slice(0, 12),
+    similar: sanitize(((d.similar?.results || []) as RawItem[]).map((x) => mapTitle(x, t.mediaType)).filter((x) => x.poster)).slice(0, 12),
     seasons,
     facts,
   };
@@ -76,7 +77,8 @@ export async function loadPerson(id: number): Promise<Person> {
     .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
     .filter((x) => (seen.has(x.media_type + x.id) ? false : (seen.add(x.media_type + x.id), true)))
     .map((x) => mapTitle(x as RawItem));
-  return { name: pd.name, photo: pd.profile_path || null, dept: pd.known_for_department || '', bio: pd.biography || '', movies: items.filter((x) => x.mediaType === 'movie'), series: items.filter((x) => x.mediaType === 'tv') };
+  const safe = sanitize(items);
+  return { name: pd.name, photo: pd.profile_path || null, dept: pd.known_for_department || '', bio: pd.biography || '', movies: safe.filter((x) => x.mediaType === 'movie'), series: safe.filter((x) => x.mediaType === 'tv') };
 }
 
 import { GATEWAY_BASE } from './config';
@@ -85,7 +87,7 @@ export async function searchMulti(q: string): Promise<Title[]> {
   try {
     const d = await tmdbGet<{ results: RawItem[] }>('/search/multi', { query: q });
     if (d?.results?.length) {
-      return d.results.filter((x) => (x.media_type === 'movie' || x.media_type === 'tv') && x.poster_path).map((x) => mapTitle(x));
+      return sanitize(d.results.filter((x) => (x.media_type === 'movie' || x.media_type === 'tv') && x.poster_path && !x.adult).map((x) => mapTitle(x)));
     }
   } catch {}
 
@@ -93,7 +95,7 @@ export async function searchMulti(q: string): Promise<Title[]> {
     const gwRes = await fetch(`${GATEWAY_BASE}/v1/search?q=${encodeURIComponent(q)}`, { signal: AbortSignal.timeout(2000) });
     if (gwRes.ok) {
       const data: any = await gwRes.json();
-      return (data.results || []).map((it: any) => ({
+      return sanitize((data.results || []).map((it: any) => ({
         id: it.id,
         title: it.title,
         mediaType: it.type || 'movie',
@@ -103,7 +105,7 @@ export async function searchMulti(q: string): Promise<Title[]> {
         releaseDate: it.year ? `${it.year}-01-01` : '',
         overview: it.overview || '',
         genreIds: []
-      }));
+      })));
     }
   } catch {}
   return [];
