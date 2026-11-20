@@ -8,9 +8,10 @@ export interface Server {
 type Kind = 'movie' | 'tv' | string;
 
 /** Extra embed players added on the client (the gateway only returns three templated URLs).
- * CI stream-probe 2026-11-20 (real Chrome, iframe, two taps): vidsrc.su, vidlink (movies), 2embed and
- * vidsrc.wtf produced advancing video frames; vidsrc.to and vidfast rendered a player but no frames
- * without more taps; the rest showed no player at all. */
+ * CI stream-probe 2026-11-20, two runs (real Chrome, iframe, two taps): vidsrc.su and vidsrc.wtf produced
+ * advancing frames for movie 603, tv 1396, anime 37854 and new movie 1084242 in both runs; vidlink only for
+ * movie 603 (its tv/new files are h265, HTTP 428 in Chrome Linux); 2embed in run 1 only (run 2: ads);
+ * vidsrc.to and vidfast rendered a player but no frames; the rest showed no player at all. */
 const EXTRA: { name: string; movie: (id: string) => string; tv: (id: string, s: number, e: number) => string }[] = [
   { name: 'VidSrc SU', movie: (id) => `https://vidsrc.su/movie/${id}`, tv: (id, s, e) => `https://vidsrc.su/tv/${id}/${s}/${e}` },
   { name: 'VidLink', movie: (id) => `https://vidlink.pro/movie/${id}`, tv: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}` },
@@ -20,7 +21,7 @@ const EXTRA: { name: string; movie: (id: string) => string; tv: (id: string, s: 
   { name: 'VidFast', movie: (id) => `https://vidfast.pro/movie/${id}`, tv: (id, s, e) => `https://vidfast.pro/tv/${id}/${s}/${e}` },
 ];
 /** Best first, by the probe evidence above; hosts not listed go last. */
-const RANK = ['vidsrc.su', 'vidlink.pro', '2embed.cc', 'vidsrc.wtf', 'vidsrc.to', 'vidfast.pro', 'autoembed.co'];
+const RANK = ['vidsrc.su', 'vidsrc.wtf', 'vidlink.pro', '2embed.cc', 'vidsrc.to', 'vidfast.pro', 'autoembed.co'];
 
 /** Hosts proven dead on 2026-11-20 (DNS NXDOMAIN, or no player in the probe); never offered. */
 const DEAD_HOSTS = /(^|\.)(vidsrc\.xyz|moviesapi\.club|player\.autoembed\.cc|vidking\.net|vidsrc\.vip|player\.videasy\.net|111movies\.com|vidsrc\.cc|embed\.su|vidsrc\.rip|multiembed\.mov)$/i;

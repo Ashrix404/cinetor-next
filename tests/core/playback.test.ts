@@ -61,7 +61,8 @@ describe('embed servers', () => {
   it('ranked by probe evidence, one per host (gateway url kept for its host)', () => {
     const s = buildServers(['https://vidlink.pro/movie/603', 'https://vidsrc.to/embed/movie/603', 'https://www.vidlink.pro/x', 'https://autoembed.co/movie/tmdb/603'], 'movie', 603);
     expect(s[0].url).toBe('https://vidsrc.su/movie/603');
-    expect(s[1]).toEqual({ name: 'VidLink', url: 'https://vidlink.pro/movie/603' });
+    expect(s[1].url).toContain('vidsrc.wtf');
+    expect(s[2]).toEqual({ name: 'VidLink', url: 'https://vidlink.pro/movie/603' });
     expect(s[s.length - 1].url).toContain('autoembed.co');
     expect(s.map((x) => hostOf(x.url)).filter((h) => h === 'vidlink.pro').length).toBe(1);
     expect(s.length).toBeGreaterThan(2);
