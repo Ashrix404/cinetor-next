@@ -27,7 +27,7 @@ function label(d: DlItem) {
   if (d.kind === 'comic') return 'Chapter ' + (214 - (d.episode - 1)) + ' · PDF';
   if (d.kind === 'music') return 'Music · MP3';
   const ep = /\.S\d+E\d+\./.test(d.path) ? `S${d.season} · E${d.episode} · ` : '';
-  return ep + d.quality + 'p' + (d.audio && d.audio !== 'OG' ? ' · ' + dubName(d.audio) : '');
+  return ep + d.quality + 'p' + (d.audio && d.audio !== 'OG' && d.audio !== 'Original' ? ' · ' + dubName(d.audio) : '');
 }
 
 async function openItem(d: DlItem) {
@@ -147,7 +147,7 @@ function SettingsSheet({ close }: { close: () => void }) {
         {ds.treeUri && <span class="btn text" style="height:40px" onClick={() => (dlSettings.set({ treeUri: undefined, label: undefined, root: 'Download/Cinetor' }), toast('Back to Download/Cinetor'))}>Use default</span>}
         <div class="lbl2">Parallel connections</div>
         <div class="pill2">{([16, 32, 64] as const).map((n) => <span key={n} class={ds.conn === n ? 'on' : ''} onClick={() => (dlSettings.set({ conn: n }), toast(n + ' parallel connections'))}>{n}</span>)}</div>
-        <div class="body-s" style="margin-top:8px">More connections = faster on a good network. Applies to new and resumed downloads.{!isNative() && ' A browser allows about 6 connections per server; 16/32/64 apply fully in the Android app.'}</div>
+        <div class="body-s" style="margin-top:8px">More connections = faster on a good network. Applies to new and resumed downloads.{!isNative() && ' A browser allows only about 6 connections at a time; 16/32/64 apply fully in the Android app.'}</div>
       </div>
     </>
   );

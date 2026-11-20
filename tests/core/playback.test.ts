@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { enginesFor, isHlsUrl, proxify } from '../../src/core/playback';
 import { isPlaylist, LIVE, mergeGatewayChannels, pickChannel, usableChannelUrl } from '../../src/core/live';
-import { buildServers, hostOf, nextUntried } from '../../src/core/embeds';
+import { buildEmbeds, hostOf, nextUntried } from '../../src/core/embeds';
 import { parseResolve } from '../../src/core/stream-resolver';
 
 describe('playback engines', () => {
@@ -57,23 +57,26 @@ describe('live channels', () => {
   });
 });
 
-describe('embed servers', () => {
+describe('embed players', () => {
   it('ranked by probe evidence, one per host (gateway url kept for its host)', () => {
-    const s = buildServers(['https://vidlink.pro/movie/603', 'https://vidsrc.to/embed/movie/603', 'https://www.vidlink.pro/x', 'https://autoembed.co/movie/tmdb/603'], 'movie', 603);
+    const s = buildEmbeds(['https://vidlink.pro/movie/603', 'https://vidsrc.to/embed/movie/603', 'https://www.vidlink.pro/x', 'https://autoembed.co/movie/tmdb/603'], 'movie', 603);
     expect(s[0].url).toBe('https://vidsrc.su/movie/603');
     expect(s[1].url).toContain('vidsrc.wtf');
-    expect(s[2]).toEqual({ name: 'VidLink', url: 'https://vidlink.pro/movie/603' });
-    expect(s[s.length - 1].url).toContain('autoembed.co');
+    expect(s[2]).toEqual({ url: 'https://vidlink.pro/movie/603' });
+    expect(s.findIndex((x) => x.url.includes('autoembed.co'))).toBe(6);
     expect(s.map((x) => hostOf(x.url)).filter((h) => h === 'vidlink.pro').length).toBe(1);
     expect(s.length).toBeGreaterThan(2);
   });
   it('tv urls carry season and episode', () => {
-    for (const x of buildServers([], 'tv', 1396, 2, 5)) expect(x.url).toMatch(/1396.*2.*5/);
+    for (const x of buildEmbeds([], 'tv', 1396, 2, 5)) expect(x.url).toMatch(/1396.*2.*5/);
   });
-  it('drops dead hosts', () => {
-    expect(buildServers(['https://vidsrc.xyz/embed/movie/1'], 'movie', 1).some((x) => x.url.includes('vidsrc.xyz'))).toBe(false);
+  it('keeps hosts that were dead in the probe, as the last resort', () => {
+    const r = buildEmbeds(['https://vidsrc.xyz/embed/movie/1'], 'movie', 1);
+    const i = r.findIndex((x) => x.url.includes('vidsrc.xyz'));
+    expect(i).toBeGreaterThan(r.findIndex((x) => x.url.includes('vidfast.pro')));
+    expect(i).toBeGreaterThan(r.findIndex((x) => x.url.includes('vidrock.net')));
   });
-  it('failover visits every server once then stops', () => {
+  it('failover visits every player once then stops', () => {
     const tried = new Set([0]);
     expect(nextUntried(3, 0, tried)).toBe(1);
     tried.add(1);
@@ -81,16 +84,17 @@ describe('embed servers', () => {
     tried.add(2);
     expect(nextUntried(3, 2, tried)).toBe(-1);
   });
-  it('parseResolve names servers and adds extra players', () => {
+  it('parseResolve keeps gateway embeds and adds extra players, no display names', () => {
     const r = parseResolve(
-      { embedUrl: 'https://vidlink.pro/movie/603', sources: [{ name: 'VidSrc Server 2 (1080p)', url: 'https://vidsrc.to/embed/movie/603', isDirect: false }], subtitles: [{ lang: 'en' }] },
+      { embedUrl: 'https://vidlink.pro/movie/603', sources: [{ name: 'VidSrc 2 (1080p)', url: 'https://vidsrc.to/embed/movie/603', isDirect: false }], subtitles: [{ lang: 'en' }] },
       { type: 'movie', id: 603 }
     )!;
-    expect(r.servers.find((x) => x.url.includes('vidsrc.to'))?.name).toBe('VidSrc');
-    expect(r.embeds.length).toBe(r.servers.length);
+    expect(r.embeds.some((x) => x.url.includes('vidsrc.to'))).toBe(true);
+    expect(r.embeds.every((x) => Object.keys(x).join() === 'url')).toBe(true);
+    expect(r.direct).toEqual([]);
     expect(r.subtitles).toEqual([]);
   });
-  it('without the gateway there are still servers (the embeds need no gateway)', () => {
-    expect(parseResolve({ sources: [] }, { type: 'movie', id: 603 })?.servers.length).toBeGreaterThan(0);
+  it('without the gateway there are still embed players (they need no gateway)', () => {
+    expect(parseResolve({ sources: [] }, { type: 'movie', id: 603 })?.embeds.length).toBeGreaterThan(0);
   });
 });

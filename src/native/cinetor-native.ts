@@ -22,6 +22,8 @@ export interface CinetorNativePlugin {
   updateInstall(o: { file: string }): Promise<{ started: boolean; needsPermission?: boolean }>;
   keepAliveForPlayback(o: { on: boolean }): Promise<void>;
   keepScreenOn(o: { on: boolean }): Promise<void>;
+  /** Referer/Origin the WebView adds to every request to `host` (and its subdomains), media included. */
+  setMediaHeaders(o: { rules: { host: string; headers: Record<string, string> }[] }): Promise<void>;
   netGet(): Promise<NetState>;
   netSet(o: Partial<Pick<NetState, 'warp' | 'antiDpi' | 'antiDpiArgs' | 'doh' | 'dohUrl'>>): Promise<NetState>;
   addListener(e: 'downloadProgress', fn: (p: DlProgress) => void): Promise<PluginListenerHandle>;

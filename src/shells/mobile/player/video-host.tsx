@@ -1,12 +1,13 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useRef } from 'preact/hooks';
 import { useStore } from '../ui/hooks';
-import { embedLoaded, getVideo, nextServer, pl } from './store';
+import { embedLoaded, getVideo, pl } from './store';
+import { sandboxFor } from '../../../core/embeds';
+import { isNative } from '../../../core/platform';
 
 /** Mounts the shared <video> element or web stream iframe inside this box (prototype `.vid`). */
 export function VideoHost({ fit, hue }: { fit: string; hue: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const s = useStore(pl);
-  const [iframeLoaded, setIframeLoaded] = useState(false);
 
   useEffect(() => {
     if (s.embedUrl) return;
@@ -15,10 +16,6 @@ export function VideoHost({ fit, hue }: { fit: string; hue: number }) {
     ref.current?.appendChild(v);
     // Moving a <video> to another parent makes the browser pause it (portrait → landscape stop bug).
     if (was && v.paused) void v.play().catch(() => {});
-  }, [s.embedUrl]);
-
-  useEffect(() => {
-    setIframeLoaded(false);
   }, [s.embedUrl]);
 
   if (s.embedUrl) {
@@ -30,13 +27,14 @@ export function VideoHost({ fit, hue }: { fit: string; hue: number }) {
           style="width:100%;height:100%;border:none;position:absolute;inset:0;"
           allowFullScreen
           allow="autoplay *; encrypted-media *; fullscreen *; picture-in-picture *"
-          onLoad={() => (setIframeLoaded(true), embedLoaded())}
+          sandbox={sandboxFor(s.embedUrl, isNative())}
+          onLoad={embedLoaded}
         />
-        {(!iframeLoaded || s.loading) && (
+        {/* one loader, owned by the embed session: it goes on the first sign of life of the page */}
+        {s.loading && (
           <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#05060a;z-index:3;gap:12px;">
             <div style="width:48px;height:48px;border:3.5px solid rgba(255,255,255,0.15);border-top-color:#38bdf8;border-right-color:#38bdf8;border-radius:50%;animation:spin 0.8s linear infinite;box-shadow:0 0 20px rgba(56,189,248,0.35);" />
             <span style="font-size:13px;color:rgba(255,255,255,0.8);font-weight:500;letter-spacing:0.3px;">Loading stream…</span>
-            {s.servers.length > 1 && <span class="vg-slow" role="button" onClick={nextServer}>Taking long? Try another server</span>}
           </div>
         )}
       </div>

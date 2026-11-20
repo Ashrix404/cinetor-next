@@ -39,7 +39,7 @@ describe('tv shell smoke', () => {
     // play an episode → fullscreen player with one <video>
     document.querySelector<HTMLElement>('#main .ep')!.click();
     await wait();
-    // one media node: the <video>, or the embed <iframe> (the embed servers need no gateway, so the mock's missing gateway still plays)
+    // one media node: the <video>, or the embed <iframe> (the embed players need no gateway, so the mock's missing gateway still plays)
     expect(document.querySelectorAll('#player video, #player iframe').length).toBe(1);
     key(85); key(90); key(89);
     key(4); // Back closes the player

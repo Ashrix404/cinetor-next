@@ -10,6 +10,18 @@ import { makePdf } from './pdf';
 import { saveWeb } from './save';
 import type { Conn, DlItem, DlKind, DownloadEngine } from './engine';
 import { fetchStream } from '../stream-resolver';
+import { buildOptions, pickFiles } from '../dl-options';
+import { cdnHeaders, onMobileData, type MediaSrc } from '../sources';
+import { proxify } from '../playback';
+
+/** Remaining files per download id: when one fails, the next one is tried (automatic fallback). */
+const alternates = new Map<string, string[]>();
+/** URL a download engine can fetch: a file whose CDN wants a Referer goes through the gateway proxy
+ * (Range supported), because neither download engine sends per-source headers. */
+export const fetchUrlOf = (s: MediaSrc) => {
+  const ref = cdnHeaders(s.headers).Referer;
+  return ref ? proxify(s.url, ref) : s.url;
+};
 
 export type { DlItem, DlKind, Conn } from './engine';
 export const dlStore = createStore<{ items: Record<string, DlItem> }>('downloads', { items: {} }, true);
@@ -35,6 +47,15 @@ export function getEngine() {
   engine.onProgress((it, bps) => {
     const prev = dlStore.get().items[it.id];
     if (!prev) return;
+    const alt = it.status === 'error' ? alternates.get(it.id) : undefined;
+    if (alt && alt.length) {
+      // this file failed: the next file for the same quality/audio starts from zero
+      const url = alt.shift()!;
+      const nextIt = { ...prev, url, bytesDone: 0, bytesTotal: 0, status: 'queued' as const, error: undefined };
+      put(nextIt);
+      void engine!.cancel(it.id).catch(() => {}).then(() => engine!.start(nextIt, dlSettings.get().conn)).catch((e) => put({ ...nextIt, status: 'error', error: String(e) }));
+      return;
+    }
     put({ ...prev, bytesDone: it.bytesDone, bytesTotal: it.bytesTotal || prev.bytesTotal, status: it.status, savedAs: it.savedAs || prev.savedAs, uri: it.uri || prev.uri, error: it.error });
     speeds.set({ [it.id]: bps });
     if (it.status === 'done' && prev.status !== 'done') void finish(it.id);
@@ -77,13 +98,13 @@ export function enqueue(specs: DlSpec[]): number {
       void saveComic(it, s.chapter ?? 1);
     } else if (s.kind === 'video') {
       void fetchStream(s.titleId, s.title, s.movie ? 'movie' : 'tv', s.season, s.episode).then((res) => {
-        if (res?.url) {
-          const updated = { ...it, url: res.url };
-          put(updated);
-          void getEngine().start(updated, dlSettings.get().conn).catch((e) => put({ ...updated, status: 'error', error: String(e) }));
-        } else {
-          put({ ...it, status: 'error', error: 'Stream unavailable for download' });
-        }
+        // real files for this episode, the chosen quality + audio first, then the nearest ones
+        const urls = pickFiles(buildOptions(res?.direct || [], { mobile: onMobileData() }), s.quality, s.audio).map(fetchUrlOf);
+        if (!urls.length) return put({ ...it, status: 'error', error: 'No downloadable file for this title' });
+        const updated = { ...it, url: urls.shift()! };
+        alternates.set(it.id, urls);
+        put(updated);
+        void getEngine().start(updated, dlSettings.get().conn).catch((e) => put({ ...updated, status: 'error', error: String(e) }));
       });
     } else {
       void getEngine().start(it, dlSettings.get().conn).catch((e) => put({ ...it, status: 'error', error: String(e) }));
@@ -128,6 +149,7 @@ export async function resume(id: string) {
   await getEngine().resume(id);
 }
 export async function cancel(id: string) {
+  alternates.delete(id);
   await getEngine().cancel(id).catch(() => {});
   await removeLocal(id);
   const items = { ...dlStore.get().items };

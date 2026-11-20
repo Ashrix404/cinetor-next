@@ -14,7 +14,7 @@ describe('stream resolver', () => {
   it('never treats an embed page as a direct file', () => {
     const r = parseResolve(gw)!;
     expect(r.url).toBe('');
-    expect(r.embeds).toEqual(['https://vidlink.pro/movie/603', 'https://vidsrc.to/embed/movie/603']);
+    expect(r.embeds.map((x) => x.url)).toEqual(['https://vidlink.pro/movie/603', 'https://vidsrc.to/embed/movie/603']);
   });
   it('picks a real media file and still keeps embeds as fallback', () => {
     const r = parseResolve({ ...gw, sources: [...gw.sources, { name: 'CDN', quality: 720, url: 'https://x.test/a/master.m3u8?t=1', type: 'hls' }] })!;

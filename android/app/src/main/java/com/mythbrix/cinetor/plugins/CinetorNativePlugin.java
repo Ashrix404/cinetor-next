@@ -36,6 +36,29 @@ public class CinetorNativePlugin extends Plugin {
         new Thread(() -> Net.get(getContext()).apply()).start(); // saved network mode on start
     }
 
+    // ---- media headers for direct files (MainActivity.shouldInterceptRequest adds them) ------
+    @PluginMethod
+    public void setMediaHeaders(PluginCall call) {
+        JSArray rules = call.getArray("rules");
+        try {
+            for (int i = 0; rules != null && i < rules.length(); i++) {
+                org.json.JSONObject r = rules.getJSONObject(i);
+                org.json.JSONObject h = r.optJSONObject("headers");
+                if (h == null) continue;
+                java.util.Map<String, String> m = new java.util.HashMap<>();
+                java.util.Iterator<String> keys = h.keys();
+                while (keys.hasNext()) {
+                    String k = keys.next();
+                    if (k.equalsIgnoreCase("Referer") || k.equalsIgnoreCase("Origin")) m.put(k, h.optString(k));
+                }
+                MediaHeaders.put(r.optString("host"), m);
+            }
+            call.resolve();
+        } catch (org.json.JSONException e) {
+            call.reject("bad rules");
+        }
+    }
+
     // ---- network modes (WARP / AntiDPI / DNS over HTTPS) -----------------------------------
     private JSObject netState() {
         Net n = Net.get(getContext());

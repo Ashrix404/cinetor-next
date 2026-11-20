@@ -5,7 +5,7 @@ import { I, SV } from '../ui/icons';
 import { useStore } from '../ui/hooks';
 import { fmtTime, SPEEDS, cycleFit } from '../../../core/player-model';
 import { back, setUi } from '../state';
-import { next, nextServer, patch, pl, prev, ptime, retryPlay, seekBy, seekFrac, setSpeed, showCtl, stop, togglePlay, toPip } from './store';
+import { next, patch, pl, prev, ptime, retryPlay, seekBy, seekFrac, setSpeed, showCtl, stop, togglePlay, toPip } from './store';
 import { gest } from './gestures';
 import { VideoHost } from './video-host';
 import { SubOverlay } from './subs-overlay';
@@ -60,27 +60,21 @@ function PlayErr() {
       <span>{s.err}</span>
       <div>
         <b role="button" onClick={retryPlay}><I n="refresh" /> Retry</b>
-        {s.servers.length > 1 && <b role="button" onClick={nextServer}><I n="server" /> Other server</b>}
       </div>
     </div>
   );
 }
 
 /**
- * Embed (iframe) servers: the page inside the iframe gets every tap, so this bar is the only way out.
- * It never hides (see `controlsHidden`): Back, Server switch, Fullscreen.
+ * Embed (iframe) player: the page inside the iframe gets every tap, so this bar is the only way out.
+ * It never hides (see `controlsHidden`): Back, Fullscreen. The app switches players on its own.
  */
 function EmbedBar({ land, onFs }: { land: boolean; onFs: () => void }) {
-  const s = pl.get();
-  const name = s.servers[s.srv]?.name.replace(/\s*\(.*\)/, '') || 'Server';
   return (
     <div class="pl t embar">
       <span class="ibtn" role="button" aria-label="Back" onClick={act(land ? back : stop)}><I n="arrow-left" /></span>
       <div style="flex:1" />
       <div class="grp">
-        {s.servers.length > 1 && (
-          <span class="pi srvpi" role="button" aria-label="Switch server" onClick={act(nextServer)}><I n="server" /><small>{name} · {s.srv + 1}/{s.servers.length}</small></span>
-        )}
         <Pi ic={land ? 'fullscreen-exit' : 'fullscreen'} label={land ? 'Exit fullscreen' : 'Fullscreen'} fn={land ? back : onFs} />
       </div>
     </div>
@@ -171,7 +165,6 @@ export function Vcore({ land, onFs }: { land: boolean; onFs: () => void }) {
         {subsI}
         <Pi ic="waveform" label="Audio" fn={sheet('audio')} />
         <Pi ic="aspect-ratio" label={'Resize: ' + p.fit} on={p.fit !== 'Fit'} fn={() => patch({ fit: cycleFit(p).fit })} />
-        <Pi ic="server" label="Server" fn={sheet('server')} />
         {epI}
       </div>
       <div class="pl b"><Seek land onFs={onFs} /></div>

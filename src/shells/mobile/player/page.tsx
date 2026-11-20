@@ -80,7 +80,7 @@ export function PlayerPage() {
   const s = useStore(pl);
   if (!s.active) return null;
   const embed = !!s.embedUrl;
-  // Embed servers get the touches themselves (touch-action auto, no tap handler); the bar never hides.
+  // Embed players get the touches themselves (touch-action auto, no tap handler); the bar never hides.
   return (
     <div class={'plbox' + (controlsHidden(c.hidden, embed) ? ' ctlhide' : '')} style={`touch-action:${embed ? 'auto' : 'none'}`} onClick={embed ? undefined : (e) => !gs.suppressed() && onPlayerTap(e)} onPointerDown={gs.down} onPointerMove={gs.move} onPointerUp={gs.up} onPointerCancel={gs.cancel} onContextMenu={gs.menu}>
       <Vcore land onFs={() => {}} />

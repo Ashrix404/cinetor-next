@@ -56,7 +56,7 @@ describe('mobile shell smoke', () => {
     await act(() => player.startAt(t, 1, 1));
     await flush();
     expect(root.querySelector('.ivp')).not.toBeNull();
-    for (const s of ['subs', 'subsearch', 'substyle', 'quality', 'server', 'episodes', 'settings', 'audio']) {
+    for (const s of ['subs', 'subsearch', 'substyle', 'quality', 'episodes', 'settings', 'audio']) {
       await act(() => st.setUi({ sheet: s }));
       await flush();
       expect(root.querySelector('.sheet'), s).not.toBeNull();

@@ -76,8 +76,6 @@ html.lg .btn.p{background:rgba(255,255,255,.92);box-shadow:0 8px 22px rgba(0,0,0
 /* player: hidden controls never catch clicks (the click reaches .pl and shows them again) */
 .pl.hide .ui{pointer-events:none}
 .pl{-webkit-tap-highlight-color:transparent}
-/* embed (iframe) servers: the bar stays visible and only it takes clicks; the iframe gets the rest */
+/* embed (iframe) player: the bar stays visible and only it takes clicks; the iframe gets the rest */
 .pl .ui.embed{pointer-events:none;background:linear-gradient(rgba(0,0,0,.85),transparent 22%)}
 .pl .ui.embed .pt1{pointer-events:auto;left:max(28px,env(safe-area-inset-left));right:max(28px,env(safe-area-inset-right));top:max(22px,env(safe-area-inset-top))}
-.pb.srv{width:auto;padding:0 16px;gap:6px;display:inline-flex;align-items:center;border-radius:999px;font-size:14px}
-.pb.srv .mi{font-size:18px}

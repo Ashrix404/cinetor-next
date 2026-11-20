@@ -10,7 +10,9 @@ import { focus } from './spatial-nav';
 import { fetchStream } from '../../core/stream-resolver';
 import { pickChannel } from '../../core/live';
 import { cancelPlay, playUrl } from '../../core/playback';
-import { nextUntried, reachable, type Server } from '../../core/embeds';
+import { playDirect } from '../../core/direct-play';
+import { EmbedSession, ERR_NONE } from '../../core/embed-session';
+import type { Embed } from '../../core/embeds';
 
 interface P { t: Title | null; label: string; live: boolean; s: number; e: number; q: Quality; sub: string; audio: string; menu: string | null; seasons: Seasons }
 export let P: P | null = null;
@@ -55,10 +57,10 @@ function load(resume: boolean) {
     void fetchStream(P.t.id, P.t.title, P.t.mediaType, P.s, P.e).then((res) => {
       if (currentTvResolveKey !== key) return;
       if (!res) return toastFn('Could not load this title. Check your connection.');
-      const embeds = () => (res.servers.length ? tvServer(res.servers, 0, new Set()) : toastFn('No working server for this title'));
-      if (res.url) {
+      const embeds = () => (res.embeds.length ? tvEmbeds(res.embeds) : toastFn(ERR_NONE));
+      if (res.direct.length) {
         dropIframe();
-        playUrl(v, res.url, { at }).catch((e: Error) => e.message !== 'cancelled' && currentTvResolveKey === key && embeds());
+        playDirect(v, res.direct, { at, alive: () => currentTvResolveKey === key }).catch((e: Error) => e.message !== 'cancelled' && currentTvResolveKey === key && embeds());
       } else embeds();
     });
   } else {
@@ -68,20 +70,20 @@ function load(resume: boolean) {
     playUrl(v, channel?.[5] || '').catch((e: Error) => e.message !== 'cancelled' && toastFn('This channel is offline right now. Try another channel.'));
   }
 }
-let srvTimer: ReturnType<typeof setTimeout> | undefined;
-let srvGen = 0;
+let session: EmbedSession | null = null;
+/** The embed guard inside the iframe (APK) reports ready / playing / blocked. */
+addEventListener('message', (e: MessageEvent) => session?.message(e.data));
 function dropIframe() {
-  clearTimeout(srvTimer);
-  srvGen++;
+  session?.stop();
+  session = null;
   if (tvIframe) {
     tvIframe.remove();
     tvIframe = null;
   }
 }
-/** Embed server `i` in an iframe; an unreachable host or a page that does not load in 15 s moves on. */
-function tvServer(list: Server[], i: number, tried: Set<number>) {
-  const v = el(), key = currentTvResolveKey, gen = ++srvGen;
-  tried.add(i);
+/** Embed players in an iframe with automatic failover (core/embed-session.ts); errors as toasts. */
+function tvEmbeds(list: Embed[]) {
+  const v = el();
   cancelPlay(v);
   v.remove();
   if (!tvIframe) {
@@ -89,19 +91,16 @@ function tvServer(list: Server[], i: number, tried: Set<number>) {
     tvIframe.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:none;z-index:0;';
     tvIframe.setAttribute('allow', 'autoplay; encrypted-media; fullscreen');
     tvIframe.setAttribute('allowfullscreen', '');
+    tvIframe.onload = () => session?.loaded();
     root?.insertBefore(tvIframe, root.firstChild);
   }
-  const fail = () => {
-    if (key !== currentTvResolveKey || gen !== srvGen) return;
-    const n = nextUntried(list.length, i, tried);
-    if (n < 0) return toastFn('No server is reachable right now');
-    tvServer(list, n, tried);
-  };
-  clearTimeout(srvTimer);
-  srvTimer = setTimeout(fail, 15000);
-  tvIframe.onload = () => clearTimeout(srvTimer);
-  tvIframe.src = list[i].url;
-  void reachable(list[i].url).then((ok) => ok || (clearTimeout(srvTimer), fail()));
+  session?.stop();
+  let shown = '';
+  session = new EmbedSession(list, (st) => {
+    if (st.err) return toastFn(st.err);
+    if (tvIframe && st.embedUrl && st.embedUrl !== shown) tvIframe.src = shown = st.embedUrl;
+  });
+  session.start(0);
 }
 export function close() {
   const v = el();

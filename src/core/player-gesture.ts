@@ -25,7 +25,7 @@ export const diffLabel = (diff: number) => (diff >= 0 ? '+' : '−') + Math.abs(
 
 /**
  * Whether the controls are really hidden. In embed (iframe) mode taps land inside the iframe and never
- * reach the player, so the Back / Server / Fullscreen bar must always stay visible there.
+ * reach the player, so the Back / Fullscreen bar must always stay visible there.
  */
 export const controlsHidden = (hidden: boolean, embed: boolean) => hidden && !embed;
 

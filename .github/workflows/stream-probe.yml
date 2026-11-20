@@ -1,17 +1,23 @@
 name: stream-probe
 # Diagnostic only: loads every embed server in an iframe (real Chrome) and every live channel
 # through hls.js (direct + gateway proxy) and prints what really plays. Never deploys anything.
+# Embed modes: chrome (phone browser), webview (APK WebView UA, before the fix), apk (WebView UA +
+# the embed guard res/raw/embed_shim.js the APK injects), sandbox (iframe sandbox used on the web).
 on:
   workflow_dispatch:
+    inputs:
+      modes: { description: 'chrome,webview,apk,sandbox', default: 'chrome', required: false }
+      embeds: { description: 'embed list file in scripts/stream-probe', default: 'embeds.json', required: false }
+      live: { description: 'probe live channels too (true/false)', default: 'true', required: false }
   push:
-    branches: [fix/playback-sources]
-    paths: ['scripts/stream-probe/**', '.github/workflows/stream-probe.yml']
+    branches: [fix/playback-sources, feat/v2-player-architecture]
+    paths: ['scripts/stream-probe/**', '.github/workflows/stream-probe.yml', 'android/app/src/main/res/raw/embed_shim.js']
 permissions:
   contents: read
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -21,10 +27,15 @@ jobs:
         run: npm i --no-save --no-package-lock playwright@1.65.1
       - name: probe
         working-directory: scripts/stream-probe
+        env:
+          IN_MODES: ${{ inputs.modes || 'chrome,webview,apk,sandbox' }}
+          IN_EMBEDS: ${{ inputs.embeds || 'embeds-webview.json' }}
+          IN_LIVE: ${{ inputs.live || 'false' }}
         run: |
           python3 -m http.server 8080 >/dev/null 2>&1 &
           sleep 1
-          export PROBE_EMBEDS="$(cat embeds.json)" PROBE_LIVE="$(cat live.json)"
+          export PROBE_MODES="$IN_MODES" PROBE_EMBEDS="$(cat "$IN_EMBEDS")"
+          if [ "$IN_LIVE" = "true" ]; then export PROBE_LIVE="$(cat live.json)"; else export PROBE_LIVE='[]'; fi
           node probe.mjs | tee probe.txt
       - uses: actions/upload-artifact@v7
         with: { name: stream-probe, path: 'scripts/stream-probe/probe.*', retention-days: 7 }
