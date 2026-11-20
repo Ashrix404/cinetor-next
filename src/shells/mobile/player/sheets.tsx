@@ -29,8 +29,6 @@ function Body() {
       return <SubStyleBody />;
     case 'quality':
       return <>{QUALITIES.map((q) => <SRowOpt key={q} ic="high-definition" txt={q} on={p.quality === q} act={() => (setQuality(q), close())} />)}</>;
-    case 'server':
-      return <>{[1, 2, 3].map((n) => <SRowOpt key={n} ic="server" txt={n} on={p.server === n} act={() => (patch({ server: n }), close())} />)}</>;
     case 'episodes': {
       const sn = ui.get().epsS || p.season, n = s.seasons[sn - 1] || 6;
       return (
@@ -50,7 +48,6 @@ function Body() {
           <Stepper i1="waveform" i2="timer-outline" v={p.audioDelayMs} on={(d) => patch({ audioDelayMs: p.audioDelayMs + d })} />
           <Stepper i1="subtitles-outline" i2="timer-outline" v={p.subDelayMs} on={(d) => patch({ subDelayMs: p.subDelayMs + d })} />
           <SRowOpt ic="waveform" txt="" act={() => setUi({ sheet: 'audio' })} />
-          <SRowOpt ic="server" txt="" act={() => setUi({ sheet: 'server' })} />
           <SRowOpt ic="aspect-ratio" txt={FITS.indexOf(p.fit) + 1 + '/3'} on={p.fit !== 'Fit'} act={() => patch({ fit: cycleFit(p).fit })} />
           <SRowOpt ic="format-size" txt="" act={() => setUi({ sheet: 'substyle' })} />
           <SRowOpt ic="headphones" txt="" on={p.bgPlay} act={() => patch({ bgPlay: !p.bgPlay })} />

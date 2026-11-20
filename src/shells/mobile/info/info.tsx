@@ -146,7 +146,7 @@ export function Info() {
   const t0 = param<Title>('t')!;
   const comic = param<string>('kind') === 'comic';
   const det = useAsync(() => loadDetails(t0), t0.mediaType + t0.id);
-  const u = ui.get(), p = pl.get();
+  const u = useStore(ui), p = useStore(pl);
   const d = det.data, t = d?.title || t0, h = hueOf(t.title);
   const playing = p.active && p.title?.id === t.id && !p.pip && !comic;
   const saved = library.isSaved(t.id);
@@ -182,8 +182,8 @@ export function Info() {
         {d?.tagline && <div class="tagline">“{d.tagline}”</div>}
         <div class="acts2">
           <span class="btn" onClick={start}><I n={comic ? 'book-open-variant' : 'play'} /> {comic ? (library.lastPage(t.id, 214) ? 'Continue' : 'Read') : 'Play'}</span>
+          <span class="btn" style="background:var(--c-high);color:var(--on);flex:none;min-width:120px;" onClick={() => (t.mediaType === 'movie' && !comic ? openDl(t, 1, 1, 'movie') : openDlAll(t, comic ? 'comic' : 'series', u.season))}><I n={dlAll ? 'check-circle' : 'download-outline'} /> Download</span>
           <span class={'sq' + (saved ? ' on' : '')} onClick={() => toast(library.toggleSaved(t) ? 'Added to My Library' : 'Removed from My Library')}><I n={saved ? 'bookmark-check' : 'bookmark-plus-outline'} />My Library</span>
-          <span class={'sq' + (dlAll ? ' on' : '')} onClick={() => (t.mediaType === 'movie' && !comic ? openDl(t, 1, 1, 'movie') : openDlAll(t, comic ? 'comic' : 'series', u.season))}><I n={dlAll ? 'check-circle' : 'download-outline'} />Download</span>
         </div>
         {d && <div style="display:flex;gap:6px;flex-wrap:wrap">{d.genres.slice(0, 4).map((g) => <span key={g} class="chip">{g}</span>)}</div>}
         <div class="title-m" style="margin-top:14px">Synopsis</div>

@@ -31,6 +31,7 @@ type Menu = 'q' | 'sub' | 'audio' | 'eps' | 'server' | 'more' | null;
 export function Player() {
   const s = useStore(dpl), st = s.st;
   const v = useRef<HTMLVideoElement>(null);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
   const [hide, setHide] = useState(false);
   const [menu, setMenu] = useState<Menu>(null);
   const [pos, setPos] = useState(0);
@@ -147,25 +148,55 @@ export function Player() {
     ],
   };
   const c = cueAt(cues.get(st.sub) || [], pos - st.subDelayMs / 1000), css = subtitleCss(SUB_DEFAULT, 'l');
+  const lastClick = useRef(0);
+  const clickTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const handlePlayerClick = (e: MouseEvent) => {
+    const tg = e.target as HTMLElement;
+    if (tg.closest('button, .pb, .menu, .sk, .rw, input, select')) return;
+    const now = Date.now();
+    if (now - lastClick.current < 340) {
+      clearTimeout(clickTimer.current);
+      lastClick.current = 0;
+      set({ playing: !st.playing });
+      setHide(false);
+      return;
+    }
+    lastClick.current = now;
+    clickTimer.current = setTimeout(() => {
+      setHide((h) => !h);
+    }, 340);
+  };
+
+  useEffect(() => { setIframeLoaded(false); }, [s.embedUrl]);
   const bgImg = s.title?.backdrop ? `url(${img(s.title.backdrop, 'w1280')})` : undefined;
   const pipStyle = s.pip ? 'inset:auto;right:20px;bottom:20px;width:360px;height:203px;border-radius:14px;box-shadow:0 14px 36px rgba(0,0,0,.7)' : '';
   return (
     <div class={'pl' + (hide ? ' hide' : '')} style={pipStyle} onMouseMove={bump}
-      onClick={(e) => { const tg = e.target as HTMLElement; if (tg === e.currentTarget || tg.tagName === 'VIDEO') set({ playing: !st.playing }); }}>
+      onClick={handlePlayerClick}>
       <div class={'vid real fit-' + st.fit} style={{ backgroundImage: bgImg, position: 'relative' }}>
         {s.embedUrl ? (
-          <iframe
-            src={s.embedUrl}
-            style="width:100%;height:100%;border:none;position:absolute;inset:0;"
-            allowFullScreen
-            allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-          />
+          <>
+            <iframe
+              src={s.embedUrl}
+              style="width:100%;height:100%;border:none;position:absolute;inset:0;"
+              allowFullScreen
+              allow="autoplay *; encrypted-media *; fullscreen *; picture-in-picture *"
+              onLoad={() => setIframeLoaded(true)}
+            />
+            {!iframeLoaded && (
+              <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#05060a;z-index:3;gap:12px;pointer-events:none;">
+                <div style="width:48px;height:48px;border:3.5px solid rgba(255,255,255,0.15);border-top-color:#38bdf8;border-right-color:#38bdf8;border-radius:50%;animation:spin 0.8s linear infinite;box-shadow:0 0 20px rgba(56,189,248,0.35);" />
+                <span style="font-size:13px;color:rgba(255,255,255,0.8);font-weight:500;letter-spacing:0.3px;">Loading stream…</span>
+              </div>
+            )}
+          </>
         ) : (
           <video ref={v} playsInline onTimeUpdate={timeUpd} onLoadedMetadata={() => setDur(v.current!.duration)} onEnded={() => (series2 ? ep(nextR) : set({ playing: false }))} />
         )}
         {s.loading && (
-          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);z-index:2;">
-            <div style="width:40px;height:40px;border:3px solid rgba(255,255,255,0.2);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;" />
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(5,6,10,0.85);z-index:3;gap:12px;pointer-events:none;">
+            <div style="width:48px;height:48px;border:3.5px solid rgba(255,255,255,0.15);border-top-color:#38bdf8;border-right-color:#38bdf8;border-radius:50%;animation:spin 0.8s linear infinite;box-shadow:0 0 20px rgba(56,189,248,0.35);" />
+            <span style="font-size:13px;color:rgba(255,255,255,0.8);font-weight:500;letter-spacing:0.3px;">Loading stream…</span>
           </div>
         )}
       </div>
@@ -207,10 +238,16 @@ export function Player() {
               <button class="pb" onClick={() => setMenu('sub')}><Ic n={st.sub === 'Off' ? 'subtitles-outline' : 'subtitles'} /></button>
               <button class="pb" onClick={() => setMenu('audio')}><Ic n="waveform" /></button>
               <button class={'pb' + (st.fit !== 'Fit' ? ' on' : '')} onClick={() => set({ fit: cycleFit(st).fit })}><Ic n="aspect-ratio" /></button>
-              <button class="pb" onClick={() => setMenu('server')}><Ic n="server" /></button>
               {series2 && <><button class="pb" onClick={() => setMenu('eps')}><Ic n="playlist-play" /></button><button class="pb" onClick={() => ep(prevR)}><Ic n="skip-previous" /></button><button class="pb" onClick={() => ep(nextR)}><Ic n="skip-next" /></button></>}
             </div>
-            <div class="sk" onClick={(e) => { if (s.live || !v.current) return; const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); v.current.currentTime = ((e.clientX - r.left) / r.width) * dur; }}><b style={{ width: (s.live ? 100 : dur ? (pos / dur) * 100 : 0) + '%' }} /></div>
+            <div class="sk" onClick={(e) => {
+              e.stopPropagation();
+              if (s.live || !v.current) return;
+              const wasPlaying = !v.current.paused;
+              const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              v.current.currentTime = ((e.clientX - r.left) / r.width) * dur;
+              if (wasPlaying && v.current.paused) void v.current.play().catch(() => {});
+            }}><b style={{ width: (s.live ? 100 : dur ? (pos / dur) * 100 : 0) + '%' }} /></div>
             <div class="tm"><span>{s.live ? 'LIVE' : fmtTime(pos)}</span><span>{s.live ? '' : fmtTime(dur)}</span></div>
           </div>
           {menu && <div class="menu" onClick={(e) => e.stopPropagation()}>{M[menu].map(([l, f, on]) => <button key={l} onClick={() => (f(), menu !== 'more' && !l.includes('generate') && setMenu(null))}>{l}{on && <Ic n="check" />}</button>)}</div>}

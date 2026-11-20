@@ -28,6 +28,10 @@ public class MainActivity extends BridgeActivity {
             settings.setDatabaseEnabled(true);
             settings.setJavaScriptCanOpenWindowsAutomatically(true);
             settings.setMixedContentMode(android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+
+            android.webkit.CookieManager cookieManager = android.webkit.CookieManager.getInstance();
+            cookieManager.setAcceptCookie(true);
+            cookieManager.setAcceptThirdPartyCookies(webView, true);
         }
 
         getBridge().getWebView().setWebViewClient(new BridgeWebViewClient(getBridge()) {

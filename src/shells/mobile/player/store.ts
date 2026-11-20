@@ -50,11 +50,26 @@ export function toggleCtl() {
   if (ctl.get().hidden) showCtl();
   else (clearTimeout(ctlTimer), ctl.set({ hidden: true }));
 }
-/** A tap on the video or empty space (not on a control) toggles the controls. */
+let lastTapTime = 0;
+let tapTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** A tap on the video or empty space toggles controls; double press toggles play/pause. */
 export function onPlayerTap(e: MouseEvent) {
   const t = e.target as HTMLElement;
-  if (t.closest('.pi,.ibtn,.sk,.big,.ptrk,.seek,.grp,.sheet,.scrim,.genpill')) return showCtl();
-  toggleCtl();
+  if (t.closest('.pi,.ibtn,.sk,.big,.ptrk,.seek,.grp,.sheet,.scrim,.genpill,.vg-pill,.vg-btn,.vg-back,.vg-fs')) return showCtl();
+
+  const now = Date.now();
+  if (now - lastTapTime < 340) {
+    clearTimeout(tapTimer);
+    lastTapTime = 0;
+    togglePlay();
+    showCtl();
+    return;
+  }
+  lastTapTime = now;
+  tapTimer = setTimeout(() => {
+    toggleCtl();
+  }, 340);
 }
 
 let video: HTMLVideoElement | null = null;
@@ -201,11 +216,15 @@ export function togglePlay() {
 }
 export function seekBy(d: number) {
   const v = getVideo();
+  const wasPlaying = pl.get().st.playing;
   v.currentTime = Math.max(0, Math.min(v.duration || 0, v.currentTime + d));
+  if (wasPlaying && v.paused) void v.play().catch(() => {});
 }
 export function seekFrac(f: number) {
   const v = getVideo();
+  const wasPlaying = pl.get().st.playing;
   if (v.duration) v.currentTime = Math.max(0, Math.min(1, f)) * v.duration;
+  if (wasPlaying && v.paused) void v.play().catch(() => {});
 }
 export function setQuality(q: Quality) {
   const v = getVideo(), at = v.currentTime, playing = pl.get().st.playing;

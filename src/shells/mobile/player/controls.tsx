@@ -86,7 +86,6 @@ export function Vcore({ land, onFs }: { land: boolean; onFs: () => void }) {
     <BarBtn key="spd" ic="speedometer" text={p.speed + '×'} label="Speed" fn={() => setSpeed(SPEEDS[(SPEEDS.indexOf(p.speed) + 1) % SPEEDS.length])} land={land} />,
     <BarBtn key="pip" ic="picture-in-picture-bottom-right" label="PiP" fn={toPip} land={land} />,
     ...(land ? [
-      <BarBtn key="srv" ic="server" label="Server" fn={sheet('server')} land={land} />,
       <BarBtn key="fit" ic="aspect-ratio" label={p.fit} on={p.fit !== 'Fit'} fn={() => patch({ fit: cycleFit(p).fit })} land={land} />,
     ] : []),
     ...(isSer ? [

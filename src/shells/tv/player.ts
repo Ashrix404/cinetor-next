@@ -108,7 +108,9 @@ function step(d: 1 | -1) {
 }
 export function seek(d: number) {
   const v = el();
+  const wasPlaying = !v.paused;
   v.currentTime = Math.max(0, Math.min(v.duration || 0, v.currentTime + d));
+  if (wasPlaying && v.paused) void v.play().catch(() => {});
   tick();
 }
 export function toggle() {

@@ -62,7 +62,7 @@ export function DlBtn({ t, s, e, kind }: { t: Title; s: number; e: number; kind:
 }
 
 export function DlSheet() {
-  const u = ui.get(), d = u.dls;
+  const u = useStore(ui), d = u.dls;
   useStore(dlStore);
   if (!d) return null;
   const comic = d.kind === 'comic', movie = d.kind === 'movie', n = comic ? 12 : movie ? 1 : 6, sel = d.sel;
