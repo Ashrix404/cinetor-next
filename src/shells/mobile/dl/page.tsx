@@ -27,7 +27,7 @@ function label(d: DlItem) {
   if (d.kind === 'comic') return 'Chapter ' + (214 - (d.episode - 1)) + ' · PDF';
   if (d.kind === 'music') return 'Music · MP3';
   const ep = /\.S\d+E\d+\./.test(d.path) ? `S${d.season} · E${d.episode} · ` : '';
-  return ep + d.quality + 'p' + (d.audio && d.audio !== 'OG' ? ' · ' + dubName(d.audio) : '');
+  return ep + d.quality + 'p' + (d.audio && d.audio !== 'OG' && d.audio !== 'Original' ? ' · ' + dubName(d.audio) : '');
 }
 
 async function openItem(d: DlItem) {

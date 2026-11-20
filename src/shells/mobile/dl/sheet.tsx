@@ -5,13 +5,15 @@ import { isAndroidBrowser, isIOS, isNative } from '../../../core/platform';
 import type { Quality } from '../../../core/series-settings';
 import type { Title } from '../../../core/tmdb';
 import { fetchStream } from '../../../core/stream-resolver';
+import { dlAvail, loadAvail } from '../../../core/dl-avail';
+import { audios, fmtSize, qualities } from '../../../core/dl-options';
+import { useEffect } from 'preact/hooks';
 import { I } from '../ui/icons';
 import { useStore } from '../ui/hooks';
 import { dlPop, on, setUi, ui, toast, type DlSheet as Dls } from '../state';
 
-export const SZ: Record<number, number> = { 2160: 3.4, 1080: 1.3, 720: 0.7, 480: 0.4, 360: 0.25 };
-export const DUBS: [string, string][] = [['OG', 'Original'], ['EN', 'English dub'], ['HI', 'Hindi dub'], ['BN', 'Bangla dub'], ['ES', 'Spanish dub'], ['JA', 'Japanese dub'], ['KO', 'Korean dub'], ['DE', 'German dub'], ['FR', 'French dub'], ['ZH', 'Chinese dub']];
-export const dubName = (c: string) => (DUBS.find((x) => x[0] === c) || DUBS[0])[1];
+/** Audio label of a download ('OG' = items saved before real audio languages existed). */
+export const dubName = (c: string) => (c === 'OG' ? 'Original' : c);
 const kindOf = (k: Dls['kind']) => (k === 'comic' ? 'comic' : 'video');
 
 /** External downloader (Preferences): hand the URL to another app instead of the engine. */
@@ -62,14 +64,24 @@ export function DlBtn({ t, s, e, kind }: { t: Title; s: number; e: number; kind:
 }
 
 export function DlSheet() {
-  const u = useStore(ui), d = u.dls;
+  const u = useStore(ui);
   useStore(dlStore);
-  if (!d) return null;
+  return u.dls ? <DlBody /> : null;
+}
+function DlBody() {
+  const u = useStore(ui), d = u.dls!;
   const comic = d.kind === 'comic', movie = d.kind === 'movie', n = comic ? 12 : movie ? 1 : 6, sel = d.sel;
   const all = { ...d.sels, [d.s]: sel };
   const cnt = Object.values(all).reduce((a, x) => a + Object.keys(x).filter((k) => x[+k]).length, 0);
   const here = Object.keys(sel).filter((k) => sel[+k]).length;
-  const gb = (cnt * SZ[u.dq]).toFixed(1);
+  const av = useStore(dlAvail);
+  const firstEp = movie ? 1 : +(Object.keys(sel).find((k) => sel[+k]) || 1);
+  const reload = (force = false) => !comic && loadAvail(d.title.id, d.title.title, movie ? 'movie' : 'tv', movie ? 1 : d.s, firstEp, force);
+  useEffect(() => void reload(), [d.title.id, d.s, firstEp, comic]);
+  const qs = qualities(av.opts), dq = qs.includes(u.dq) ? u.dq : qs[0], as = audios(av.opts, dq), da = as.includes(u.da) ? u.da : as[0];
+  const opt = av.opts.find((x) => x.quality === dq && x.audio === da);
+  const size = opt?.size ? fmtSize(opt.size * cnt) : '~';
+  const canDl = comic || av.opts.length > 0;
   const nm = (i: number) => (comic ? 'Chapter ' + (214 - i) : movie ? d.title.title : 'Episode ' + (i + 1));
   const set = (p: Partial<Dls>) => setUi({ dls: { ...d, ...p } });
   const go = () => {
@@ -77,7 +89,7 @@ export function DlSheet() {
     const specs = Object.entries(sels).flatMap(([sn, sl]) =>
       Object.keys(sl).filter((k) => sl[+k]).map((k) => ({
         poster: d.title.poster, titleId: d.title.id, title: d.title.title, kind: kindOf(d.kind) as 'video' | 'comic', season: +sn, episode: +k,
-        quality: u.dq as Quality, audio: comic ? 'OG' : u.da, movie, chapter: comic ? 214 - (+k - 1) : undefined,
+        quality: (dq || u.dq) as Quality, audio: comic ? 'OG' : da || 'Original', movie, chapter: comic ? 214 - (+k - 1) : undefined,
       })),
     );
     if (on.get().ed && !comic) {
@@ -92,7 +104,7 @@ export function DlSheet() {
     const c = enqueue(specs);
     if (!c) return;
     setUi({ dls: null });
-    dlPop('Download started · ' + c + ' item' + (c > 1 ? 's' : '') + (comic ? ' (PDF)' : ' · ' + u.dq + 'p'));
+    dlPop('Download started · ' + c + ' item' + (c > 1 ? 's' : '') + (comic ? ' (PDF)' : ' · ' + dq + 'p'));
   };
   return (
     <>
@@ -122,16 +134,19 @@ export function DlSheet() {
             );
           })}
         </div>
-        {!comic && (
+        {!comic && (av.state === 'loading' || av.state === 'idle') && <div class="dlh">Checking what can be downloaded…</div>}
+        {!comic && av.state === 'error' && <div class="dlh">Couldn't check this title<span class="dls" onClick={() => reload(true)}>Retry</span></div>}
+        {!comic && av.state === 'ready' && !av.opts.length && <div class="dlh">No downloadable file was found for this title<span class="dls" onClick={() => reload(true)}>Retry</span></div>}
+        {!comic && av.opts.length > 0 && (
           <>
             <div class="dlh">Quality</div>
-            <div class="lgrid">{[2160, 1080, 720, 480, 360].map((q) => <span key={q} class={'lg' + (q === u.dq ? ' has' : '')} onClick={() => setUi({ dq: q })}>{q}p <small>{SZ[q]} GB</small></span>)}</div>
-            <div class="dlh">Audio (dub)</div>
-            <div class="lgrid">{DUBS.map(([c, nme]) => <span key={c} class={'lg' + (c === u.da ? ' has' : '')} onClick={() => setUi({ da: c })}>{nme}</span>)}</div>
+            <div class="lgrid">{qs.map((q) => <span key={q} class={'lg' + (q === dq ? ' has' : '')} onClick={() => setUi({ dq: q })}>{q}p <small>{fmtSize(av.opts.find((x) => x.quality === q)?.size || 0)}</small></span>)}</div>
+            <div class="dlh">Audio</div>
+            <div class="lgrid">{as.map((c) => <span key={c} class={'lg' + (c === da ? ' has' : '')} onClick={() => setUi({ da: c })}>{c}</span>)}</div>
           </>
         )}
         </div>
-        <div class="dlf"><span class="body-s">{cnt} selected{!comic && ` · ${gb} GB`}</span><span class={'btn' + (cnt ? '' : ' dis')} onClick={go}><I n="download" /> Download</span></div>
+        <div class="dlf"><span class="body-s">{cnt} selected{!comic && ` · ${size}`}</span><span class={'btn' + (cnt && canDl ? '' : ' dis')} onClick={() => cnt && canDl && go()}><I n="download" /> Download</span></div>
       </div>
     </>
   );

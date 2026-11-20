@@ -22,7 +22,7 @@ export interface DUi {
   dq: number;
   da: string;
 }
-export const ui = createStore<DUi>('d-ui', { adultOk: false, pin: null, pop: '', toast: '', dls: null, reader: null, dq: 1080, da: 'OG' }, false);
+export const ui = createStore<DUi>('d-ui', { adultOk: false, pin: null, pop: '', toast: '', dls: null, reader: null, dq: 1080, da: 'Original' }, false);
 export const setUi = (p: Partial<DUi>) => ui.set(p);
 
 let tt: ReturnType<typeof setTimeout> | undefined, pt: ReturnType<typeof setTimeout> | undefined;

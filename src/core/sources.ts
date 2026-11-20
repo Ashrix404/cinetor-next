@@ -16,6 +16,8 @@ export interface MediaSrc {
   quality: number;
   name: string;
   headers?: Record<string, string>;
+  /** bytes, when the gateway reported it */
+  size?: number;
 }
 
 const IMAGE = /\.(jpe?g|png|webp|gif|bmp|svg)$|\/null$/i;
@@ -98,7 +100,9 @@ export function rankSources(list: MediaSrc[], o: { mobile?: boolean; health?: Li
 export function toMediaSrc(x: any, isDirect: (u: string, flag?: boolean) => boolean): MediaSrc | null {
   if (!x || typeof x.url !== 'string' || !isDirect(x.url, x.isDirect)) return null;
   const headers = x.headers && typeof x.headers === 'object' ? (x.headers as Record<string, string>) : undefined;
-  return { url: x.url, kind: kindOf(x.url, x.type), quality: Number(x.quality) || 0, name: String(x.name || 'Direct'), headers };
+  const out: MediaSrc = { url: x.url, kind: kindOf(x.url, x.type), quality: Number(x.quality) || 0, name: String(x.name || 'Direct'), headers };
+  if (Number(x.size) > 0) out.size = Number(x.size);
+  return out;
 }
 
 /** Only these headers matter to a CDN; the rest (User-Agent, Cookie) are the WebView's own business. */

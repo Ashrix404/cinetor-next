@@ -40,7 +40,7 @@ export interface Ui {
 export const ui = createStore<Ui>('ui', {
   drawer: false, drawerOut: false, sheet: false, dialog: null, pin: null, adultOk: false, season: 1, more: false, dls: null, q: '', sq: null, epsS: null,
   opt: { drama: 'K-Drama', comics: 'Manga', tv: 'Live TV', sp: 'All', st: 'Recent', tvcat: 'All', scroll: 'grid', pseg: 'Movies', favOnly: '' },
-  toast: null, pathDlg: false, tab3: 'Info', fav: {}, dq: 1080, da: 'OG',
+  toast: null, pathDlg: false, tab3: 'Info', fav: {}, dq: 1080, da: 'Original',
 }, false);
 
 /** Persisted switches (prototype `ST.on` + `sw(k,d)` defaults). */

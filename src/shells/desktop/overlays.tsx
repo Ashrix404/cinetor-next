@@ -10,7 +10,9 @@ import { pickWebFolder } from '../../core/downloads/save';
 import { VERSION, DEVELOPER } from '../../core/config';
 import type { Quality } from '../../core/series-settings';
 import { SEEDS } from '../shared/theme';
-import { useAsync } from '../mobile/ui/hooks';
+import { useAsync, useStore } from '../mobile/ui/hooks';
+import { dlAvail, loadAvail } from '../../core/dl-avail';
+import { audios, fmtSize, qualities } from '../../core/dl-options';
 import { adult, dlPop, go, library, prefs, router, setUi, toast, ui } from './state';
 import { Ic } from './ui';
 
@@ -50,6 +52,7 @@ export function DlSheet() {
   const [sels, setSels] = useState<Record<number, Record<number, boolean>>>({ 1: d.comic ? {} : all(n) });
   const eps = useAsync(() => (d.t.mediaType === 'tv' && !d.comic ? loadSeason(d.t.id, s) : Promise.resolve([])), d.t.id + '|' + s);
   const sel = sels[s] || {};
+  const avail = useStore(dlAvail);
   const total = Object.values(sels).reduce((a, o) => a + Object.values(o).filter(Boolean).length, 0);
   const close = () => setUi({ dls: null });
   const start = () => {
@@ -75,17 +78,35 @@ export function DlSheet() {
             <div class="pill">{list.map((e) => <button key={e.n} class={sel[e.n] ? 'on' : ''} onClick={() => setSels({ ...sels, [s]: { ...sel, [e.n]: !sel[e.n] } })}>{e.n}. {e.name}</button>)}</div>
           </>
         )}
-        {!d.comic && (
-          <>
-            <div class="lbl">Quality</div>
-            <div class="pill">{[2160, 1080, 720, 480, 360].map((q) => <button key={q} class={u.dq === q ? 'on' : ''} onClick={() => setUi({ dq: q })}>{q}p</button>)}</div>
-            <div class="lbl">Audio (dub)</div>
-            <div class="pill">{[['OG', 'Original'], ['EN', 'English dub'], ['HI', 'Hindi dub'], ['BN', 'Bangla dub'], ['ES', 'Spanish dub'], ['JA', 'Japanese dub'], ['KO', 'Korean dub']].map(([c, a]) => <button key={c} class={u.da === c ? 'on' : ''} onClick={() => setUi({ da: c })}>{a}</button>)}</div>
-          </>
-        )}
-        <div class="btns" style={{ marginTop: 20 }}><button class="btn p" onClick={start}><Ic n="download" /> Download {d.t.mediaType === 'tv' ? total : ''}</button><button class="btn" onClick={close}>Cancel</button></div>
+        {!d.comic && <DlChoices s={s} sel={sel} />}
+        <div class="btns" style={{ marginTop: 20 }}><button class="btn p" disabled={!d.comic && !avail.opts.length} onClick={start}><Ic n="download" /> Download {d.t.mediaType === 'tv' ? total : ''}</button><button class="btn" onClick={close}>Cancel</button></div>
       </div>
     </div>
+  );
+}
+
+/** Real qualities + audio languages of the first selected episode (core/dl-avail.ts). */
+function DlChoices({ s, sel }: { s: number; sel: Record<number, boolean> }) {
+  const d = ui.get().dls!, u = ui.get(), a = useStore(dlAvail);
+  const tv = d.t.mediaType === 'tv';
+  const ep = tv ? +(Object.keys(sel).find((k) => sel[+k]) || 1) : 1;
+  useEffect(() => loadAvail(d.t.id, d.t.title, tv ? 'tv' : 'movie', tv ? s : 1, ep), [d.t.id, s, ep]);
+  useEffect(() => {
+    const qs = qualities(a.opts);
+    if (qs.length && !qs.includes(u.dq)) setUi({ dq: qs[0] });
+    const as = audios(a.opts, qs.includes(u.dq) ? u.dq : qs[0]);
+    if (as.length && !as.includes(u.da)) setUi({ da: as[0] });
+  }, [a.opts]);
+  if (a.state === 'loading' || a.state === 'idle') return <div class="lbl">Checking what can be downloaded…</div>;
+  if (a.state === 'error') return <div class="lbl">Couldn't check this title. <button class="btn" onClick={() => loadAvail(d.t.id, d.t.title, tv ? 'tv' : 'movie', tv ? s : 1, ep, true)}>Retry</button></div>;
+  if (!a.opts.length) return <div class="lbl">No downloadable file was found for this title.</div>;
+  return (
+    <>
+      <div class="lbl">Quality</div>
+      <div class="pill">{qualities(a.opts).map((q) => <button key={q} class={u.dq === q ? 'on' : ''} onClick={() => setUi({ dq: q })}>{q}p {fmtSize(a.opts.find((x) => x.quality === q)?.size || 0)}</button>)}</div>
+      <div class="lbl">Audio</div>
+      <div class="pill">{audios(a.opts, u.dq).map((c) => <button key={c} class={u.da === c ? 'on' : ''} onClick={() => setUi({ da: c })}>{c}</button>)}</div>
+    </>
   );
 }
 
