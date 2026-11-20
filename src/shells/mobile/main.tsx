@@ -1,7 +1,7 @@
 import { render } from 'preact';
+import './app.css';
+import './glass.css';
+import { App, installBack } from './app';
 
-function App() {
-  return <p>Cinetor mobile shell OK</p>;
-}
-
-render(<App />, document.getElementById('app')!);
+render(<App />, document.getElementById('app-root')!);
+installBack();
