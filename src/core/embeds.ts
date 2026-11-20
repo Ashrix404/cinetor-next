@@ -19,12 +19,28 @@ const EXTRA: { movie: (id: string) => string; tv: (id: string, s: number, e: num
   { movie: (id) => `https://vidsrc.wtf/api/1/movie/?id=${id}`, tv: (id, s, e) => `https://vidsrc.wtf/api/1/tv/?id=${id}&s=${s}&e=${e}` },
   { movie: (id) => `https://vidsrc.to/embed/movie/${id}`, tv: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}` },
   { movie: (id) => `https://vidfast.pro/movie/${id}`, tv: (id, s, e) => `https://vidfast.pro/tv/${id}/${s}/${e}` },
+  { movie: (id) => `https://vidsrc.sh/embed/movie/${id}`, tv: (id, s, e) => `https://vidsrc.sh/embed/tv/${id}/${s}/${e}` },
+  { movie: (id) => `https://vidrock.net/movie/${id}`, tv: (id, s, e) => `https://vidrock.net/tv/${id}/${s}/${e}` },
+  { movie: (id) => `https://player.autoembed.me/embed/movie/${id}`, tv: (id, s, e) => `https://player.autoembed.me/embed/tv/${id}/${s}/${e}` },
+  // last resort (no player / no DNS in the 2026-11-20 probe; kept, never removed: hosts come back)
+  { movie: (id) => `https://vidsrc.xyz/embed/movie/${id}`, tv: (id, s, e) => `https://vidsrc.xyz/embed/tv/${id}/${s}/${e}` },
+  { movie: (id) => `https://vidsrc.cc/v2/embed/movie/${id}`, tv: (id, s, e) => `https://vidsrc.cc/v2/embed/tv/${id}/${s}/${e}` },
+  { movie: (id) => `https://embed.su/embed/movie/${id}`, tv: (id, s, e) => `https://embed.su/embed/tv/${id}/${s}/${e}` },
+  { movie: (id) => `https://vidsrc.rip/embed/movie/${id}`, tv: (id, s, e) => `https://vidsrc.rip/embed/tv/${id}/${s}/${e}` },
+  { movie: (id) => `https://vidsrc.vip/embed/movie/${id}`, tv: (id, s, e) => `https://vidsrc.vip/embed/tv/${id}/${s}/${e}` },
+  { movie: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1`, tv: (id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}` },
+  { movie: (id) => `https://player.videasy.net/movie/${id}`, tv: (id, s, e) => `https://player.videasy.net/tv/${id}/${s}/${e}` },
+  { movie: (id) => `https://111movies.com/movie/${id}`, tv: (id, s, e) => `https://111movies.com/tv/${id}/${s}/${e}` },
+  { movie: (id) => `https://www.vidking.net/embed/movie/${id}`, tv: (id, s, e) => `https://www.vidking.net/embed/tv/${id}/${s}/${e}` },
+  { movie: (id) => `https://moviesapi.club/movie/${id}`, tv: (id, s, e) => `https://moviesapi.club/tv/${id}-${s}-${e}` },
+  { movie: (id) => `https://player.autoembed.cc/embed/movie/${id}`, tv: (id, s, e) => `https://player.autoembed.cc/embed/tv/${id}/${s}/${e}` },
 ];
 /** Best first, by the probe evidence above; hosts not listed go last. */
 const RANK = ['vidsrc.su', 'vidsrc.wtf', 'vidlink.pro', '2embed.cc', 'vidsrc.to', 'vidfast.pro', 'autoembed.co'];
 
-/** Hosts proven dead on 2026-11-20 (DNS NXDOMAIN, or no player in the probe); never offered. */
-const DEAD_HOSTS = /(^|\.)(vidsrc\.xyz|moviesapi\.club|player\.autoembed\.cc|vidking\.net|vidsrc\.vip|player\.videasy\.net|111movies\.com|vidsrc\.cc|embed\.su|vidsrc\.rip|multiembed\.mov)$/i;
+/** Hosts with no player / no DNS on 2026-11-20: still kept, as the very last resort (low priority).
+ * An unreachable one costs one failed no-cors fetch (DNS error) before the next is tried. */
+const LOW_HOSTS = /(^|\.)(vidsrc\.xyz|moviesapi\.club|player\.autoembed\.cc|vidking\.net|vidsrc\.vip|player\.videasy\.net|111movies\.com|vidsrc\.cc|embed\.su|vidsrc\.rip|multiembed\.mov)$/i;
 
 export const hostOf = (u: string) => {
   try {
@@ -34,14 +50,14 @@ export const hostOf = (u: string) => {
   }
 };
 
-/** Gateway embeds + extra players, one entry per host, dead hosts dropped, best first (RANK, then
- * what this session learned: a player that played comes first, one that refused to play goes last). */
+/** Gateway embeds + extra players, one entry per host, nothing dropped, best first (RANK, unknown hosts,
+ * then LOW_HOSTS; and what this session learned: a player that played first, one that refused last). */
 export function buildEmbeds(gatewayEmbeds: string[], kind: Kind, id: number | string, s = 1, e = 1): Embed[] {
   const out: Embed[] = [];
   const seen = new Set<string>();
   const add = (url: string) => {
     const h = hostOf(url);
-    if (!h || seen.has(h) || DEAD_HOSTS.test(h)) return;
+    if (!h || seen.has(h)) return;
     seen.add(h);
     out.push({ url });
   };
@@ -51,7 +67,8 @@ export function buildEmbeds(gatewayEmbeds: string[], kind: Kind, id: number | st
   const rank = (u: string) => {
     const i = RANK.indexOf(hostOf(u));
     const h = embedHealth.get(hostOf(u));
-    return (h === 'playing' ? -100 : h === 'blocked' ? 100 : 0) + (i < 0 ? RANK.length : i);
+    const base = i >= 0 ? i : LOW_HOSTS.test(hostOf(u)) ? RANK.length + 10 : RANK.length;
+    return (h === 'playing' ? -100 : h === 'blocked' ? 100 : 0) + base;
   };
   return out.map((x, i) => ({ x, i })).sort((a, b) => rank(a.x.url) - rank(b.x.url) || a.i - b.i).map((y) => y.x);
 }

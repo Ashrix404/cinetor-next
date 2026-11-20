@@ -63,15 +63,18 @@ describe('embed players', () => {
     expect(s[0].url).toBe('https://vidsrc.su/movie/603');
     expect(s[1].url).toContain('vidsrc.wtf');
     expect(s[2]).toEqual({ url: 'https://vidlink.pro/movie/603' });
-    expect(s[s.length - 1].url).toContain('autoembed.co');
+    expect(s.findIndex((x) => x.url.includes('autoembed.co'))).toBe(6);
     expect(s.map((x) => hostOf(x.url)).filter((h) => h === 'vidlink.pro').length).toBe(1);
     expect(s.length).toBeGreaterThan(2);
   });
   it('tv urls carry season and episode', () => {
     for (const x of buildEmbeds([], 'tv', 1396, 2, 5)) expect(x.url).toMatch(/1396.*2.*5/);
   });
-  it('drops dead hosts', () => {
-    expect(buildEmbeds(['https://vidsrc.xyz/embed/movie/1'], 'movie', 1).some((x) => x.url.includes('vidsrc.xyz'))).toBe(false);
+  it('keeps hosts that were dead in the probe, as the last resort', () => {
+    const r = buildEmbeds(['https://vidsrc.xyz/embed/movie/1'], 'movie', 1);
+    const i = r.findIndex((x) => x.url.includes('vidsrc.xyz'));
+    expect(i).toBeGreaterThan(r.findIndex((x) => x.url.includes('vidfast.pro')));
+    expect(i).toBeGreaterThan(r.findIndex((x) => x.url.includes('vidrock.net')));
   });
   it('failover visits every player once then stops', () => {
     const tried = new Set([0]);
