@@ -79,7 +79,32 @@ export async function loadPerson(id: number): Promise<Person> {
   return { name: pd.name, photo: pd.profile_path || null, dept: pd.known_for_department || '', bio: pd.biography || '', movies: items.filter((x) => x.mediaType === 'movie'), series: items.filter((x) => x.mediaType === 'tv') };
 }
 
+import { GATEWAY_BASE } from './config';
+
 export async function searchMulti(q: string): Promise<Title[]> {
-  const d = await tmdbGet<{ results: RawItem[] }>('/search/multi', { query: q });
-  return d.results.filter((x) => (x.media_type === 'movie' || x.media_type === 'tv') && x.poster_path).map((x) => mapTitle(x));
+  try {
+    const d = await tmdbGet<{ results: RawItem[] }>('/search/multi', { query: q });
+    if (d?.results?.length) {
+      return d.results.filter((x) => (x.media_type === 'movie' || x.media_type === 'tv') && x.poster_path).map((x) => mapTitle(x));
+    }
+  } catch {}
+
+  try {
+    const gwRes = await fetch(`${GATEWAY_BASE}/v1/search?q=${encodeURIComponent(q)}`, { signal: AbortSignal.timeout(2000) });
+    if (gwRes.ok) {
+      const data: any = await gwRes.json();
+      return (data.results || []).map((it: any) => ({
+        id: it.id,
+        title: it.title,
+        mediaType: it.type || 'movie',
+        poster: it.poster,
+        backdrop: it.backdrop,
+        rating: 8.0,
+        releaseDate: it.year ? `${it.year}-01-01` : '',
+        overview: it.overview || '',
+        genreIds: []
+      }));
+    }
+  } catch {}
+  return [];
 }

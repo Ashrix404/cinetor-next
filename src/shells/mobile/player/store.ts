@@ -6,6 +6,7 @@ import type { Title } from '../../../core/tmdb';
 import type { Quality } from '../../../core/series-settings';
 import { cur, library, series } from '../state';
 import { isNative } from '../../../core/platform';
+import { fetchStream } from '../../../core/stream-resolver';
 
 export interface Pl {
   active: boolean;
@@ -116,6 +117,8 @@ function load(q: Quality, at = 0, play = true) {
   if (play) v.play().then(() => keepAwake(true), () => patch({ playing: false }));
 }
 
+let currentResolveKey = '';
+
 /** Prototype `startAt`: start a title/episode with the series memory applied. */
 export function startAt(t: Title, season: number, episode: number, o: { seasons?: Seasons; hue?: number; local?: string } = {}) {
   const keep = pl.get().st, mem = series.load(t.id);
@@ -125,7 +128,25 @@ export function startAt(t: Title, season: number, episode: number, o: { seasons?
   });
   pl.set({ active: true, pip: false, live: false, title: t, label: '', hue: o.hue ?? pl.get().hue, st, seasons: o.seasons || pl.get().seasons, local: o.local || null });
   const resume = library.progress(t.id, season, episode);
-  load(st.quality, resume > 0.02 && resume < 0.97 ? resume * 120 : 0);
+  const atPos = resume > 0.02 && resume < 0.97 ? resume * 120 : 0;
+
+  // Resolve real high-speed stream from Cloudflare Gateway in background (<200ms cached, ~2s fresh)
+  if (!o.local) {
+    const key = `${t.id}:${season}:${episode}`;
+    currentResolveKey = key;
+    void fetchStream(t.id, t.title, t.mediaType, season, episode).then((res) => {
+      if (res?.url && currentResolveKey === key) {
+        const v = getVideo();
+        const curTime = v.currentTime || atPos;
+        const isPlaying = pl.get().st.playing;
+        v.src = res.url;
+        v.currentTime = curTime;
+        if (isPlaying) v.play().catch(() => {});
+      }
+    });
+  }
+
+  load(st.quality, atPos);
 }
 
 /** Live channel / match: plays the 720p clip with a LIVE badge. */

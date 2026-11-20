@@ -8,6 +8,7 @@ import type { Quality } from '../../core/series-settings';
 import { img, type Title } from '../../core/tmdb';
 import { library, series, toast } from './state';
 import { Ic, Sv } from './ui';
+import { fetchStream } from '../../core/stream-resolver';
 
 interface DPl { on: boolean; title: Title | null; live: string; st: PlayerState; seasons: Seasons; pip: boolean; local?: string | null }
 export const dpl = createStore<DPl>('d-pl', { on: false, title: null, live: '', st: initialState({ titleId: 0, title: '', mediaType: 'movie' }), seasons: MOCK_SEASONS, pip: false }, false);
@@ -62,6 +63,17 @@ export function Player() {
       if (st.playing) el.play().catch(() => set({ playing: false }));
     };
     el.readyState >= 1 ? go() : el.addEventListener('loadedmetadata', go, { once: true });
+
+    if (s.title && !s.local) {
+      void fetchStream(s.title.id, s.title.title, s.title.mediaType, st.season, st.episode).then((res) => {
+        if (res?.url && el) {
+          const cur = el.currentTime || at;
+          el.src = res.url;
+          el.currentTime = cur;
+          if (st.playing) el.play().catch(() => {});
+        }
+      });
+    }
   }, [src, st.titleId, st.season, st.episode]);
   useEffect(() => {
     const el = v.current;

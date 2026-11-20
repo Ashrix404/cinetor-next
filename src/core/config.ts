@@ -10,6 +10,7 @@ export const VERSION_CODE: number = Number(env.VITE_APP_CODE || 0);
 export const TMDB_TOKEN: string = env.VITE_TMDB_TOKEN || '';
 export const TMDB_API = 'https://api.themoviedb.org/3';
 export const TMDB_IMG = 'https://image.tmdb.org/t/p/';
+export const GATEWAY_BASE = env.VITE_GATEWAY_BASE || 'https://cinetor-api.sofasraful.workers.dev';
 export const SITE_BASE = 'https://ashrix404.github.io/cinetor-releases/';
 export const MEDIA_BASE = SITE_BASE + 'media/';
 export const LATEST_URL = SITE_BASE + 'latest.json';

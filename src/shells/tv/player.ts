@@ -8,6 +8,7 @@ import { I } from './icons';
 import { esc } from './views';
 import { library, series } from './state';
 import { focus } from './spatial-nav';
+import { fetchStream } from '../../core/stream-resolver';
 
 interface P { t: Title | null; label: string; live: boolean; s: number; e: number; q: Quality; sub: string; audio: string; menu: string | null; seasons: Seasons }
 export let P: P | null = null;
@@ -39,12 +40,27 @@ export function play(o: { t?: Title; live?: string; s?: number; e?: number; seas
   load(true);
   draw();
 }
+let currentTvResolveKey = '';
+
 function load(resume: boolean) {
   const v = el();
   const at = resume && P?.t ? library.progress(P.t.id, P.s, P.e) * 120 : v.currentTime;
   v.src = MEDIA_BASE + clipFor(P!.live ? 720 : P!.q);
   v.addEventListener('loadedmetadata', () => at > 1 && at < 118 && (v.currentTime = at), { once: true });
   void v.play().catch(() => {});
+
+  if (P?.t && !P.live) {
+    const key = `${P.t.id}:${P.s}:${P.e}`;
+    currentTvResolveKey = key;
+    void fetchStream(P.t.id, P.t.title, P.t.mediaType, P.s, P.e).then((res) => {
+      if (res?.url && currentTvResolveKey === key) {
+        const curTime = v.currentTime || at;
+        v.src = res.url;
+        v.currentTime = curTime;
+        void v.play().catch(() => {});
+      }
+    });
+  }
 }
 export function close() {
   const v = el();
