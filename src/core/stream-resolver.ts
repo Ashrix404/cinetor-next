@@ -1,6 +1,4 @@
-import { GATEWAY_BASE, MEDIA_BASE } from './config';
-import { clipFor } from './player-model';
-import type { Quality } from './series-settings';
+import { GATEWAY_BASE } from './config';
 
 export interface ResolvedStream {
   url: string;
@@ -11,8 +9,6 @@ export interface ResolvedStream {
   sources: { name: string; quality: number; url: string; type: string; headers?: Record<string, string> }[];
   subtitles: { lang: string; url: string; format: string }[];
 }
-
-export const fallbackClip = (q: Quality) => MEDIA_BASE + clipFor(q);
 
 // In-memory session cache for instant playback on repeat taps (<5ms)
 const streamCache = new Map<string, ResolvedStream>();
@@ -34,7 +30,7 @@ export async function fetchStream(
     const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
     if (!res.ok) return null;
     const data: any = await res.json();
-    if (data?.sources?.length > 0 || data?.webPlayUrl || data?.embedUrl) {
+    if (data?.sources?.length > 0 || data?.embedUrl) {
       const bestSource = data.sources?.[0] || { url: '', quality: 1080 };
       const resolved: ResolvedStream = {
         url: bestSource.url,

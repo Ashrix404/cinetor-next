@@ -1,12 +1,12 @@
 // Player store + one shared <video> element (created once, moved between inline / fullscreen / PiP).
-import { MEDIA_BASE } from '../../../core/config';
-import { clipFor, initialState, next as nextR, prev as prevR, type PlayerState, type Seasons, MOCK_SEASONS } from '../../../core/player-model';
+import { initialState, next as nextR, prev as prevR, type PlayerState, type Seasons, MOCK_SEASONS } from '../../../core/player-model';
 import { createStore } from '../../../core/store';
 import type { Title } from '../../../core/tmdb';
 import type { Quality } from '../../../core/series-settings';
 import { cur, library, series } from '../state';
 import { isNative } from '../../../core/platform';
 import { fetchStream } from '../../../core/stream-resolver';
+import { LIVE_ALL } from '../../../core/live';
 
 export interface Pl {
   active: boolean;
@@ -89,8 +89,6 @@ function onTime() {
   }
 }
 
-export const srcFor = (q: Quality) => MEDIA_BASE + clipFor(q);
-
 export function patch(p: Partial<PlayerState>) {
   const s = pl.get();
   pl.set({ st: { ...s.st, ...p } });
@@ -103,15 +101,14 @@ function keepAwake(on: boolean) {
 }
 
 function load(q: Quality, at = 0, play = true) {
+  const local = pl.get().local;
+  if (!local) return;
   const v = getVideo();
-  const src = pl.get().local || srcFor(q);
-  if (v.src !== src) v.src = src;
+  if (v.src !== local) v.src = local;
   const seek = () => {
     try {
       v.currentTime = at;
-    } catch {
-      /* not seekable yet */
-    }
+    } catch {}
   };
   if (v.readyState >= 1) seek();
   else v.addEventListener('loadedmetadata', seek, { once: true });
@@ -147,9 +144,21 @@ export function startAt(t: Title, season: number, episode: number, o: { seasons?
     if (currentResolveKey !== key) return;
     pl.set({ loading: false });
 
-    // Web browser shell: if webPlayUrl or embedUrl provided, play web stream seamlessly
-    if (!isNative() && (res?.webPlayUrl || res?.embedUrl)) {
-      pl.set({ embedUrl: res.webPlayUrl || res.embedUrl! });
+    // Native Android direct stream
+    if (isNative() && res?.url) {
+      const v = getVideo();
+      v.src = res.url;
+      const seek = () => { try { v.currentTime = atPos; } catch {} };
+      if (v.readyState >= 1) seek();
+      else v.addEventListener('loadedmetadata', seek, { once: true });
+      v.playbackRate = pl.get().st.speed;
+      v.play().then(() => keepAwake(true), () => patch({ playing: false }));
+      return;
+    }
+
+    // Embed player fallback (works universally on Web and WebView)
+    if (res?.embedUrl) {
+      pl.set({ embedUrl: res.embedUrl });
       return;
     }
 
@@ -161,17 +170,19 @@ export function startAt(t: Title, season: number, episode: number, o: { seasons?
       else v.addEventListener('loadedmetadata', seek, { once: true });
       v.playbackRate = pl.get().st.speed;
       v.play().then(() => keepAwake(true), () => patch({ playing: false }));
-    } else {
-      load(st.quality, atPos);
     }
   });
 }
 
-/** Live channel / match: plays the 720p clip with a LIVE badge. */
-export function startLive(label: string, hue: number) {
+/** Live channel / match: plays the real live HLS stream. */
+export function startLive(label: string, hue: number, streamUrl?: string) {
+  const channel = LIVE_ALL.find((c) => c[1] === label || c[0] === label);
+  const url = streamUrl || channel?.[5] || 'https://tsports.live/live.m3u8';
   const st = initialState({ titleId: -1, title: label, mediaType: 'live', quality: 720, mode: 'fullscreen' });
-  pl.set({ active: true, pip: false, live: true, title: null, label, hue, st, local: null });
-  load(720, 0);
+  pl.set({ active: true, pip: false, live: true, title: null, label, hue, st, local: null, embedUrl: null, loading: false });
+  const v = getVideo();
+  v.src = url;
+  v.play().then(() => keepAwake(true), () => patch({ playing: false }));
 }
 
 export function togglePlay() {

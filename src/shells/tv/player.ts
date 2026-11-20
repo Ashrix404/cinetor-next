@@ -1,7 +1,6 @@
 // TV player: always fullscreen, ONE <video> element created once and reused (docs/09 rules 9, 14).
-import { MEDIA_BASE } from '../../core/config';
-import { clipFor, fmtTime, MOCK_SEASONS, next as nextR, prev as prevR, QUALITIES, type Seasons } from '../../core/player-model';
-import { cueAt, LANGS, langOf, parseVtt, simulateGeneration, type Cue } from '../../core/subtitles';
+import { fmtTime, MOCK_SEASONS, next as nextR, prev as prevR, QUALITIES, type Seasons } from '../../core/player-model';
+import { cueAt, LANGS, langOf, parseVtt, simulateGeneration, vttUrl, type Cue } from '../../core/subtitles';
 import type { Quality } from '../../core/series-settings';
 import type { Title } from '../../core/tmdb';
 import { I } from './icons';
@@ -9,6 +8,7 @@ import { esc } from './views';
 import { library, series } from './state';
 import { focus } from './spatial-nav';
 import { fetchStream } from '../../core/stream-resolver';
+import { LIVE_ALL } from '../../core/live';
 
 interface P { t: Title | null; label: string; live: boolean; s: number; e: number; q: Quality; sub: string; audio: string; menu: string | null; seasons: Seasons }
 export let P: P | null = null;
@@ -51,19 +51,17 @@ function load(resume: boolean) {
     currentTvResolveKey = key;
     void fetchStream(P.t.id, P.t.title, P.t.mediaType, P.s, P.e).then((res) => {
       if (currentTvResolveKey !== key) return;
-      if (res?.url) {
-        v.src = res.url;
-        v.currentTime = at;
-        void v.play().catch(() => {});
-      } else {
-        v.src = MEDIA_BASE + clipFor(P!.q);
+      const targetUrl = res?.url || res?.embedUrl;
+      if (targetUrl) {
+        v.src = targetUrl;
         v.currentTime = at;
         void v.play().catch(() => {});
       }
     });
   } else {
-    v.src = MEDIA_BASE + clipFor(P!.live ? 720 : P!.q);
-    v.addEventListener('loadedmetadata', () => at > 1 && at < 118 && (v.currentTime = at), { once: true });
+    const channel = LIVE_ALL.find((c) => c[1] === P?.label || c[0] === P?.label);
+    const url = channel?.[5] || 'https://tsports.live/live.m3u8';
+    v.src = url;
     void v.play().catch(() => {});
   }
 }
@@ -169,7 +167,7 @@ export function pick(k: string, v: string) {
   if (k === 'audio') p.audio = v;
   if (k === 'sub') {
     p.sub = v;
-    if (v !== 'Off' && !cues.has(v)) void fetch(MEDIA_BASE + 'subtitles/' + v + '.vtt').then((r) => r.text()).then((t) => cues.set(v, parseVtt(t)));
+    if (v !== 'Off' && !cues.has(v)) void fetch(vttUrl(v)).then((r) => r.text()).then((t) => cues.set(v, parseVtt(t)));
   }
   p.menu = null;
   save();

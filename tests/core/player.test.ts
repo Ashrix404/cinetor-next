@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clipFor, fmtTime, initialState, lock, next, pip, prev, seekBy, setQuality } from '../../src/core/player-model';
+import { fmtTime, initialState, lock, next, pip, prev, seekBy, setQuality } from '../../src/core/player-model';
 import { cueAt, parseVtt, sampleVtt, simulateGeneration, subtitleCss, SUB_DEFAULT } from '../../src/core/subtitles';
 
 const tv = () => initialState({ titleId: 1, title: 'Show', mediaType: 'tv', dur: 100 });
@@ -31,10 +31,7 @@ describe('player model', () => {
     expect(pip(lock(tv())).locked).toBe(false);
     expect(setQuality(tv(), 480).quality).toBe(480);
   });
-  it('maps quality to mock clips', () => {
-    expect(clipFor(2160)).toBe('clip-1080p.mp4');
-    expect(clipFor(720)).toBe('clip-720p.mp4');
-    expect(clipFor(360)).toBe('clip-480p.mp4');
+  it('formats time correctly', () => {
     expect(fmtTime(3725)).toBe('1:02:05');
     expect(fmtTime(65)).toBe('1:05');
   });

@@ -9,8 +9,9 @@ import { img, type Title } from '../../core/tmdb';
 import { library, series, toast } from './state';
 import { Ic, Sv } from './ui';
 import { fetchStream } from '../../core/stream-resolver';
+import { LIVE_ALL } from '../../core/live';
 
-import { isNative } from '../../core/platform';
+
 
 interface DPl { on: boolean; title: Title | null; live: string; st: PlayerState; seasons: Seasons; pip: boolean; local?: string | null; embedUrl?: string | null; loading?: boolean }
 export const dpl = createStore<DPl>('d-pl', { on: false, title: null, live: '', st: initialState({ titleId: 0, title: '', mediaType: 'movie' }), seasons: MOCK_SEASONS, pip: false, embedUrl: null, loading: false }, false);
@@ -56,6 +57,14 @@ export function Player() {
     const el = v.current;
     if (!el) return;
 
+    if (s.live) {
+      const channel = LIVE_ALL.find((c) => c[1] === s.live || c[0] === s.live);
+      const url = channel?.[5] || 'https://tsports.live/live.m3u8';
+      el.src = url;
+      el.play().catch(() => {});
+      return;
+    }
+
     if (s.local) {
       if (el.src !== s.local) el.src = s.local;
       const at = library.progress(st.titleId, st.season, st.episode) * 120;
@@ -67,8 +76,8 @@ export function Player() {
     if (s.title) {
       void fetchStream(s.title.id, s.title.title, s.title.mediaType, st.season, st.episode).then((res) => {
         dpl.set({ loading: false });
-        if (!isNative() && (res?.webPlayUrl || res?.embedUrl)) {
-          dpl.set({ embedUrl: res.webPlayUrl || res.embedUrl });
+        if (res?.embedUrl) {
+          dpl.set({ embedUrl: res.embedUrl });
           return;
         }
         if (res?.url && el) {
@@ -77,7 +86,7 @@ export function Player() {
         }
       });
     }
-  }, [st.titleId, st.season, st.episode]);
+  }, [st.titleId, st.season, st.episode, s.live]);
   useEffect(() => {
     const el = v.current;
     if (!el) return;

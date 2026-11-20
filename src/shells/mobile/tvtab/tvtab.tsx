@@ -26,7 +26,7 @@ export function Crest({ n, big }: { n: string; big?: boolean }) {
   return <span class={'crest2 tc' + (c.variant === 1 ? ' dk' : '') + (c.variant === 2 ? ' f1' : '') + (big ? ' big' : '')} style={`--h:${c.hue}`}>{c.short}</span>;
 }
 
-const playChannel = (c: Channel) => (startLive(c[1], c[2]), nav('player', { live: true }));
+const playChannel = (c: Channel) => (startLive(c[1], c[2], c[5]), nav('player', { live: true }));
 const fav = (id: number) => {
   const f = { ...ui.get().fav, [id]: !ui.get().fav[id] };
   setUi({ fav: f });
@@ -129,9 +129,9 @@ export function Watch() {
       </div>
       <div class="scroll">
         <div class="wv" style={`--h:${hashS(m.league) % 360}`}>
-          {live ? <><span class="livep" style="position:absolute;top:10px;left:10px"><i />LIVE</span><div class="wvp" onClick={() => (startLive(m.a + ' · ' + m.b, hashS(m.league) % 360), nav('player', { live: true }))}><I n="play" /></div></>
+          {live ? <><span class="livep" style="position:absolute;top:10px;left:10px"><i />LIVE</span><div class="wvp" onClick={() => (startLive(m.a + ' · ' + m.b, hashS(m.league) % 360, 'https://tsports.live/live.m3u8'), nav('player', { live: true }))}><I n="play" /></div></>
             : m.st === 'up' ? <div class="wvs"><I n="clock-outline" /><b>{m.time}</b><small>{m.date}</small></div>
-            : <div class="wvp" onClick={() => (startLive(m.a + ' · ' + m.b, hashS(m.league) % 360), nav('player', { live: true }))}><I n="play" /></div>}
+            : <div class="wvp" onClick={() => (startLive(m.a + ' · ' + m.b, hashS(m.league) % 360, 'https://tsports.live/live.m3u8'), nav('player', { live: true }))}><I n="play" /></div>}
         </div>
         <div class="wcard">
           <div class="mb" style="padding:6px 0 2px"><Crest n={m.a} big /><span class="tn">{m.a}</span><b class="vs">VS</b><span class="tn">{m.b}</span><Crest n={m.b} big /></div>

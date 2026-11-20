@@ -69,12 +69,6 @@ export const fullscreen = (s: PlayerState, on = s.mode !== 'fullscreen'): Player
 export const delay = (s: PlayerState, which: 'audio' | 'sub', d: number): PlayerState =>
   which === 'audio' ? { ...s, audioDelayMs: s.audioDelayMs + d } : { ...s, subDelayMs: s.subDelayMs + d };
 
-/** Mock files exist for 1080/720/480; 2160 → 1080, 360 → 480. */
-export function clipFor(q: Quality): string {
-  const real = q >= 1080 ? 1080 : q <= 480 ? 480 : 720;
-  return `clip-${real}p.mp4`;
-}
-
 export function fmtTime(sec: number): string {
   const x = Math.max(0, Math.floor(sec));
   const h = Math.floor(x / 3600), m = Math.floor(x / 60) % 60, s = x % 60;

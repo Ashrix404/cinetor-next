@@ -2,10 +2,9 @@
 // quality + dub remembered for the session, popup "Download started · View".
 import { dlId, dlStore, enqueue, cancel, speeds } from '../../../core/downloads';
 import { isAndroidBrowser, isIOS, isNative } from '../../../core/platform';
-import { MEDIA_BASE } from '../../../core/config';
-import { clipFor } from '../../../core/player-model';
 import type { Quality } from '../../../core/series-settings';
 import type { Title } from '../../../core/tmdb';
+import { fetchStream } from '../../../core/stream-resolver';
 import { I } from '../ui/icons';
 import { useStore } from '../ui/hooks';
 import { dlPop, on, setUi, ui, toast, type DlSheet as Dls } from '../state';
@@ -82,7 +81,11 @@ export function DlSheet() {
       })),
     );
     if (on.get().ed && !comic) {
-      specs.forEach((s) => void external(MEDIA_BASE + clipFor(s.quality), d.title.title));
+      specs.forEach((s) => {
+        void fetchStream(d.title.id, d.title.title, movie ? 'movie' : 'tv', s.season, s.episode).then((res) => {
+          if (res?.url) void external(res.url, d.title.title);
+        });
+      });
       setUi({ dls: null });
       return toast('Sent to another app');
     }

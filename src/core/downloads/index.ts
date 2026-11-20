@@ -1,8 +1,6 @@
 // Download manager shared by the mobile and desktop shells (TV has no downloads).
-import { MEDIA_BASE } from '../config';
 import { isNative } from '../platform';
 import { createStore } from '../store';
-import { clipFor } from '../player-model';
 import { trackUrl } from '../music';
 import type { Quality } from '../series-settings';
 import { createWebEngine } from './web-engine';
@@ -11,6 +9,7 @@ import { DEFAULT_ROOT, fileName, relPath } from './naming';
 import { makePdf } from './pdf';
 import { saveWeb } from './save';
 import type { Conn, DlItem, DlKind, DownloadEngine } from './engine';
+import { fetchStream } from '../stream-resolver';
 
 export type { DlItem, DlKind, Conn } from './engine';
 export const dlStore = createStore<{ items: Record<string, DlItem> }>('downloads', { items: {} }, true);
@@ -70,12 +69,25 @@ export function enqueue(specs: DlSpec[]): number {
     const id = dlId(s.kind, s.titleId, s.season, s.episode);
     if (dlStore.get().items[id]) continue;
     const name = fileName(s.kind, s.title, { season: s.season, episode: s.episode, quality: s.quality, chapter: s.chapter, movie: s.movie });
-    const url = s.kind === 'video' ? MEDIA_BASE + clipFor(s.quality) : s.kind === 'music' ? trackUrl(s.title) : '';
+    const url = s.kind === 'music' ? trackUrl(s.title) : '';
     const it: DlItem = { id, poster: s.poster ?? null, titleId: s.titleId, kind: s.kind, title: s.title, season: s.season, episode: s.episode, quality: s.quality, audio: s.audio, url, bytesDone: 0, bytesTotal: 0, status: 'queued', path: relPath(s.kind, name, dlSettings.get().root) };
     put(it);
     n++;
-    if (s.kind === 'comic') void saveComic(it, s.chapter ?? 1);
-    else void getEngine().start(it, dlSettings.get().conn).catch((e) => put({ ...it, status: 'error', error: String(e) }));
+    if (s.kind === 'comic') {
+      void saveComic(it, s.chapter ?? 1);
+    } else if (s.kind === 'video') {
+      void fetchStream(s.titleId, s.title, s.movie ? 'movie' : 'tv', s.season, s.episode).then((res) => {
+        if (res?.url) {
+          const updated = { ...it, url: res.url };
+          put(updated);
+          void getEngine().start(updated, dlSettings.get().conn).catch((e) => put({ ...updated, status: 'error', error: String(e) }));
+        } else {
+          put({ ...it, status: 'error', error: 'Stream unavailable for download' });
+        }
+      });
+    } else {
+      void getEngine().start(it, dlSettings.get().conn).catch((e) => put({ ...it, status: 'error', error: String(e) }));
+    }
   }
   return n;
 }
