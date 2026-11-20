@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { MEDIA_BASE } from '../../core/config';
 import { createStore } from '../../core/store';
-import { clipFor, cycleFit, fmtTime, initialState, MOCK_SEASONS, next as nextR, prev as prevR, SPEEDS, QUALITIES, type PlayerState, type Seasons } from '../../core/player-model';
+import { cycleFit, fmtTime, initialState, MOCK_SEASONS, next as nextR, prev as prevR, SPEEDS, QUALITIES, type PlayerState, type Seasons } from '../../core/player-model';
 import { LANGS, langOf, parseVtt, simulateGeneration, subtitleCss, SUB_DEFAULT, cueAt, type Cue } from '../../core/subtitles';
 import type { Quality } from '../../core/series-settings';
 import { img, type Title } from '../../core/tmdb';
@@ -52,8 +52,6 @@ export function Player() {
     clearTimeout(tmr.current);
     tmr.current = setTimeout(() => setHide(true), 3500);
   };
-  // source + resume
-  const src = s.local || MEDIA_BASE + clipFor(st.quality);
   useEffect(() => {
     const el = v.current;
     if (!el) return;
