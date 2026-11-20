@@ -45,21 +45,26 @@ let currentTvResolveKey = '';
 function load(resume: boolean) {
   const v = el();
   const at = resume && P?.t ? library.progress(P.t.id, P.s, P.e) * 120 : v.currentTime;
-  v.src = MEDIA_BASE + clipFor(P!.live ? 720 : P!.q);
-  v.addEventListener('loadedmetadata', () => at > 1 && at < 118 && (v.currentTime = at), { once: true });
-  void v.play().catch(() => {});
 
   if (P?.t && !P.live) {
     const key = `${P.t.id}:${P.s}:${P.e}`;
     currentTvResolveKey = key;
     void fetchStream(P.t.id, P.t.title, P.t.mediaType, P.s, P.e).then((res) => {
-      if (res?.url && currentTvResolveKey === key) {
-        const curTime = v.currentTime || at;
+      if (currentTvResolveKey !== key) return;
+      if (res?.url) {
         v.src = res.url;
-        v.currentTime = curTime;
+        v.currentTime = at;
+        void v.play().catch(() => {});
+      } else {
+        v.src = MEDIA_BASE + clipFor(P!.q);
+        v.currentTime = at;
         void v.play().catch(() => {});
       }
     });
+  } else {
+    v.src = MEDIA_BASE + clipFor(P!.live ? 720 : P!.q);
+    v.addEventListener('loadedmetadata', () => at > 1 && at < 118 && (v.currentTime = at), { once: true });
+    void v.play().catch(() => {});
   }
 }
 export function close() {

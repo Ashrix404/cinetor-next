@@ -5,7 +5,10 @@ import type { Quality } from './series-settings';
 export interface ResolvedStream {
   url: string;
   quality: number;
-  sources: { name: string; quality: number; url: string; type: string }[];
+  slug?: string;
+  webPlayUrl?: string;
+  embedUrl?: string;
+  sources: { name: string; quality: number; url: string; type: string; headers?: Record<string, string> }[];
   subtitles: { lang: string; url: string; format: string }[];
 }
 
@@ -28,14 +31,18 @@ export async function fetchStream(
 
   try {
     const url = `${GATEWAY_BASE}/v1/resolve?id=${titleId}&title=${encodeURIComponent(titleName)}&type=${type}&season=${season}&episode=${episode}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(3500) });
+    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
     if (!res.ok) return null;
     const data: any = await res.json();
-    if (data?.sources?.length > 0) {
+    if (data?.sources?.length > 0 || data?.webPlayUrl || data?.embedUrl) {
+      const bestSource = data.sources?.[0] || { url: '', quality: 1080 };
       const resolved: ResolvedStream = {
-        url: data.sources[0].url,
-        quality: data.sources[0].quality,
-        sources: data.sources,
+        url: bestSource.url,
+        quality: bestSource.quality || 1080,
+        slug: data.slug,
+        webPlayUrl: data.webPlayUrl,
+        embedUrl: data.embedUrl,
+        sources: data.sources || [],
         subtitles: data.subtitles || []
       };
       streamCache.set(cacheKey, resolved);

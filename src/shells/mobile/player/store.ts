@@ -25,10 +25,13 @@ export interface Pl {
   gen: { titleId: number; code: string; p: number } | null;
   /** set when playing a downloaded file (offline) */
   local: string | null;
+  embedUrl: string | null;
+  loading: boolean;
 }
 export const pl = createStore<Pl>('pl', {
   active: false, pip: false, px: null, py: null, live: false, hue: 215, title: null, label: '',
   st: initialState({ titleId: 0, title: '', mediaType: 'movie' }), seasons: MOCK_SEASONS, tracks: {}, gen: null, local: null,
+  embedUrl: null, loading: false
 }, false);
 /** Position ticks live in their own store so only the seek bar re-renders. */
 export const ptime = createStore('ptime', { pos: 0, dur: 0 }, false);
@@ -60,7 +63,6 @@ export function getVideo(): HTMLVideoElement {
   const v = document.createElement('video');
   v.playsInline = true;
   v.preload = 'auto';
-  v.crossOrigin = 'anonymous';
   v.setAttribute('playsinline', '');
   v.addEventListener('timeupdate', onTime);
   v.addEventListener('loadedmetadata', () => {
@@ -126,27 +128,43 @@ export function startAt(t: Title, season: number, episode: number, o: { seasons?
     titleId: t.id, title: t.title, mediaType: t.mediaType, season, episode, speed: keep.speed, fit: keep.fit, hwDecoder: keep.hwDecoder,
     quality: mem.quality, audio: mem.audio, sub: mem.sub, mode: 'inline',
   });
-  pl.set({ active: true, pip: false, live: false, title: t, label: '', hue: o.hue ?? pl.get().hue, st, seasons: o.seasons || pl.get().seasons, local: o.local || null });
+  pl.set({
+    active: true, pip: false, live: false, title: t, label: '', hue: o.hue ?? pl.get().hue,
+    st, seasons: o.seasons || pl.get().seasons, local: o.local || null, embedUrl: null, loading: !o.local
+  });
   const resume = library.progress(t.id, season, episode);
   const atPos = resume > 0.02 && resume < 0.97 ? resume * 120 : 0;
 
-  // Resolve real high-speed stream from Cloudflare Gateway in background (<200ms cached, ~2s fresh)
-  if (!o.local) {
-    const key = `${t.id}:${season}:${episode}`;
-    currentResolveKey = key;
-    void fetchStream(t.id, t.title, t.mediaType, season, episode).then((res) => {
-      if (res?.url && currentResolveKey === key) {
-        const v = getVideo();
-        const curTime = v.currentTime || atPos;
-        const isPlaying = pl.get().st.playing;
-        v.src = res.url;
-        v.currentTime = curTime;
-        if (isPlaying) v.play().catch(() => {});
-      }
-    });
+  if (o.local) {
+    load(st.quality, atPos);
+    return;
   }
 
-  load(st.quality, atPos);
+  // Resolve real high-speed stream from Cloudflare Gateway in background (<200ms cached, ~2s fresh)
+  const key = `${t.id}:${season}:${episode}`;
+  currentResolveKey = key;
+  void fetchStream(t.id, t.title, t.mediaType, season, episode).then((res) => {
+    if (currentResolveKey !== key) return;
+    pl.set({ loading: false });
+
+    // Web browser shell: if webPlayUrl or embedUrl provided, play web stream seamlessly
+    if (!isNative() && (res?.webPlayUrl || res?.embedUrl)) {
+      pl.set({ embedUrl: res.webPlayUrl || res.embedUrl! });
+      return;
+    }
+
+    if (res?.url) {
+      const v = getVideo();
+      v.src = res.url;
+      const seek = () => { try { v.currentTime = atPos; } catch {} };
+      if (v.readyState >= 1) seek();
+      else v.addEventListener('loadedmetadata', seek, { once: true });
+      v.playbackRate = pl.get().st.speed;
+      v.play().then(() => keepAwake(true), () => patch({ playing: false }));
+    } else {
+      load(st.quality, atPos);
+    }
+  });
 }
 
 /** Live channel / match: plays the 720p clip with a LIVE badge. */
@@ -202,7 +220,7 @@ export function stop() {
   v.pause();
   v.removeAttribute('src');
   v.load(); // release the decoder
-  pl.set({ active: false, pip: false });
+  pl.set({ active: false, pip: false, embedUrl: null, loading: false });
   keepAwake(false);
 }
 export function toPip() {

@@ -10,15 +10,17 @@ import { library, series, toast } from './state';
 import { Ic, Sv } from './ui';
 import { fetchStream } from '../../core/stream-resolver';
 
-interface DPl { on: boolean; title: Title | null; live: string; st: PlayerState; seasons: Seasons; pip: boolean; local?: string | null }
-export const dpl = createStore<DPl>('d-pl', { on: false, title: null, live: '', st: initialState({ titleId: 0, title: '', mediaType: 'movie' }), seasons: MOCK_SEASONS, pip: false }, false);
+import { isNative } from '../../core/platform';
+
+interface DPl { on: boolean; title: Title | null; live: string; st: PlayerState; seasons: Seasons; pip: boolean; local?: string | null; embedUrl?: string | null; loading?: boolean }
+export const dpl = createStore<DPl>('d-pl', { on: false, title: null, live: '', st: initialState({ titleId: 0, title: '', mediaType: 'movie' }), seasons: MOCK_SEASONS, pip: false, embedUrl: null, loading: false }, false);
 
 export function play(t: Title, season = 1, episode = 1, seasons?: Seasons, local?: string) {
   const m = series.load(t.id), k = dpl.get().st;
-  dpl.set({ on: true, pip: false, local: local || null, title: t, live: '', seasons: seasons || dpl.get().seasons, st: initialState({ titleId: t.id, title: t.title, mediaType: t.mediaType, season, episode, quality: m.quality, audio: m.audio, sub: m.sub, speed: k.speed, fit: k.fit }) });
+  dpl.set({ on: true, pip: false, local: local || null, title: t, live: '', seasons: seasons || dpl.get().seasons, embedUrl: null, loading: !local, st: initialState({ titleId: t.id, title: t.title, mediaType: t.mediaType, season, episode, quality: m.quality, audio: m.audio, sub: m.sub, speed: k.speed, fit: k.fit }) });
 }
 export function playLive(label: string) {
-  dpl.set({ on: true, pip: false, local: null, title: null, live: label, st: initialState({ titleId: -1, title: label, mediaType: 'live', quality: 720 }) });
+  dpl.set({ on: true, pip: false, local: null, title: null, live: label, embedUrl: null, loading: false, st: initialState({ titleId: -1, title: label, mediaType: 'live', quality: 720 }) });
 }
 
 const cues = new Map<string, Cue[]>();
@@ -43,7 +45,7 @@ export function Player() {
   const close = () => {
     const el = v.current;
     if (el) (el.pause(), el.removeAttribute('src'), el.load());
-    dpl.set({ on: false, pip: false });
+    dpl.set({ on: false, pip: false, embedUrl: null, loading: false });
   };
   const bump = () => {
     setHide(false);
@@ -55,26 +57,29 @@ export function Player() {
   useEffect(() => {
     const el = v.current;
     if (!el) return;
-    const at = el.src === src ? el.currentTime : s.title ? library.progress(s.title.id, st.season, st.episode) * 120 : 0;
-    if (el.src !== src) el.src = src;
-    const go = () => {
-      if (at > 1 && at < 118) el.currentTime = at;
-      el.playbackRate = st.speed;
-      if (st.playing) el.play().catch(() => set({ playing: false }));
-    };
-    el.readyState >= 1 ? go() : el.addEventListener('loadedmetadata', go, { once: true });
 
-    if (s.title && !s.local) {
+    if (s.local) {
+      if (el.src !== s.local) el.src = s.local;
+      const at = library.progress(st.titleId, st.season, st.episode) * 120;
+      const go = () => { if (at > 1) el.currentTime = at; if (st.playing) el.play().catch(() => {}); };
+      el.readyState >= 1 ? go() : el.addEventListener('loadedmetadata', go, { once: true });
+      return;
+    }
+
+    if (s.title) {
       void fetchStream(s.title.id, s.title.title, s.title.mediaType, st.season, st.episode).then((res) => {
+        dpl.set({ loading: false });
+        if (!isNative() && (res?.webPlayUrl || res?.embedUrl)) {
+          dpl.set({ embedUrl: res.webPlayUrl || res.embedUrl });
+          return;
+        }
         if (res?.url && el) {
-          const cur = el.currentTime || at;
           el.src = res.url;
-          el.currentTime = cur;
           if (st.playing) el.play().catch(() => {});
         }
       });
     }
-  }, [src, st.titleId, st.season, st.episode]);
+  }, [st.titleId, st.season, st.episode]);
   useEffect(() => {
     const el = v.current;
     if (!el) return;
@@ -139,8 +144,22 @@ export function Player() {
   return (
     <div class={'pl' + (hide ? ' hide' : '')} style={pipStyle} onMouseMove={bump}
       onClick={(e) => { const tg = e.target as HTMLElement; if (tg === e.currentTarget || tg.tagName === 'VIDEO') set({ playing: !st.playing }); }}>
-      <div class={'vid real fit-' + st.fit} style={{ backgroundImage: bgImg }}>
-        <video ref={v} playsInline crossOrigin="anonymous" onTimeUpdate={timeUpd} onLoadedMetadata={() => setDur(v.current!.duration)} onEnded={() => (series2 ? ep(nextR) : set({ playing: false }))} />
+      <div class={'vid real fit-' + st.fit} style={{ backgroundImage: bgImg, position: 'relative' }}>
+        {s.embedUrl ? (
+          <iframe
+            src={s.embedUrl}
+            style="width:100%;height:100%;border:none;position:absolute;inset:0;"
+            allowFullScreen
+            allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+          />
+        ) : (
+          <video ref={v} playsInline onTimeUpdate={timeUpd} onLoadedMetadata={() => setDur(v.current!.duration)} onEnded={() => (series2 ? ep(nextR) : set({ playing: false }))} />
+        )}
+        {s.loading && (
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);z-index:2;">
+            <div style="width:40px;height:40px;border:3px solid rgba(255,255,255,0.2);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;" />
+          </div>
+        )}
       </div>
       {c && !st.locked && <div class="psub" style={css.pos}><span style={css.span}>{c.text}</span></div>}
       {s.pip ? (
