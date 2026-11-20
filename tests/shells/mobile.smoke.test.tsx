@@ -42,7 +42,8 @@ describe('mobile shell smoke', () => {
       await flush();
       expect(root.querySelector('#app'), name).not.toBeNull();
     }
-    st.setOpt('tv', 'Sports');
+    await act(() => st.nav('tv', {}, { root: true }));
+    await act(() => st.setOpt('tv', 'Sports'));
     await flush();
     expect(root.textContent).toContain('Highlights');
     // Home feed rows from the mocked TMDB
