@@ -9,7 +9,7 @@ export function createNativeEngine(): DownloadEngine {
   void CinetorNative.addListener('downloadProgress', (p: DlProgress) => {
     const it = known.get(p.id) || dlStore.get().items[p.id];
     if (!it) return;
-    const next = { ...it, bytesDone: p.bytesDone, bytesTotal: p.bytesTotal, status: p.status, savedAs: p.path, error: p.error };
+    const next = { ...it, bytesDone: p.bytesDone, bytesTotal: p.bytesTotal, status: p.status, savedAs: p.path, uri: p.uri, error: p.error };
     known.set(p.id, next);
     subs.forEach((f) => f(next, p.bytesPerSec));
   });

@@ -8,7 +8,8 @@ import { I } from '../ui/icons';
 import { useAsync, useStore } from '../ui/hooks';
 import { back, library, nav, param, setUi, toast, ui } from '../state';
 import { bg, ErrorCard, hueOf, Loading, ratingOf, Row } from '../ui/common';
-import { pl, startAt, toPip } from '../player/store';
+import { ctl, onPlayerTap, pl, showCtl, startAt, toPip } from '../player/store';
+import { useStore as useStoreC } from '../ui/hooks';
 import { Vcore } from '../player/controls';
 import { PlayerSheet } from '../player/sheets';
 import { DlBtn, DlSheet, openDl, openDlAll, allDone } from '../dl/sheet';
@@ -32,6 +33,8 @@ function InlinePlayer() {
   const ref = useRef<HTMLDivElement>(null);
   const sw = useRef<{ x: number; y: number } | null>(null);
   const fs = () => nav('player');
+  const c = useStoreC(ctl);
+  useEffect(showCtl, []);
   const down = (e: PointerEvent) => {
     if ((e.target as HTMLElement).closest('.pi,.ibtn,.sk,.big,.ptrk')) return;
     sw.current = { x: e.clientX, y: e.clientY };
@@ -55,7 +58,7 @@ function InlinePlayer() {
     if (Math.abs(dy) > 55 && Math.abs(dy) > Math.abs(dx) * 1.4) (dy > 0 ? toPip() : fs());
   };
   return (
-    <div class="ivp" ref={ref} style={`--h:${pl.get().hue};touch-action:none`} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
+    <div class={'ivp' + (c.hidden ? ' ctlhide' : '')} ref={ref} style={`--h:${pl.get().hue};touch-action:none`} onClick={onPlayerTap} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
       <Vcore land={false} onFs={fs} />
     </div>
   );

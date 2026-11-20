@@ -29,7 +29,7 @@ export function App() {
   const root = router.stack()[0].name;
   const tab = def.tab !== undefined ? def.tab : TABS.includes(root) ? root : null;
   return (
-    <div id="app" class={def.land ? 'land' : ''}>
+    <div id="app" class={(def.land ? 'land' : '') + (def.bare ? '' : ' hasnav')}>
       <div class="scr"><S key={router.stack().length + route.name} /></div>
       {!def.bare && <NavBar tab={tab} />}
       <Toast />

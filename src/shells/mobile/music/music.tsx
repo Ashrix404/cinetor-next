@@ -7,10 +7,10 @@ import { hashS } from '../../../core/sports';
 import { fmtTime } from '../../../core/player-model';
 import { I } from '../ui/icons';
 import { useStore } from '../ui/hooks';
-import { MenuBtn } from '../ui/common';
+import { CarTop } from '../ui/common';
 import { back, dlPop, nav, opt, param, setOpt, toast } from '../state';
 
-export const music = createStore('music', { title: NOW_DEFAULT.title, hue: NOW_DEFAULT.hue, playing: false, pos: 0, dur: 0 }, false);
+export const music = createStore('music', { title: NOW_DEFAULT.title, hue: NOW_DEFAULT.hue, playing: false, pos: 0, dur: 0, closed: false }, false);
 let audio: HTMLAudioElement | null = null;
 function el() {
   if (audio) return audio;
@@ -19,11 +19,17 @@ function el() {
   audio.addEventListener('ended', () => music.set({ playing: false }));
   return audio;
 }
-export function playTrack(title: string, hue: number) {
+export function playTrack(title: string, hue: number, url?: string) {
   const a = el();
-  if (music.get().title !== title || !a.src) a.src = trackUrl(title);
+  if (url) a.src = url;
+  else if (music.get().title !== title || !a.src) a.src = trackUrl(title);
   a.play().catch(() => {});
-  music.set({ title, hue, playing: true });
+  music.set({ title, hue, playing: true, closed: false });
+}
+export function closeMusic() {
+  const a = el();
+  a.pause();
+  music.set({ playing: false, closed: true });
 }
 export function toggleMusic() {
   const a = el(), m = music.get();
@@ -37,7 +43,7 @@ const open = (title: string, hue: number) => (playTrack(title, hue), nav('nowpla
 export function Music() {
   const g = opt('cat_music') || 'All';
   const m = useStore(music);
-  const chips = <div class="opts cat" style="padding:0;flex:1">{['All', ...MUSIC_GENRES].map((o) => <span key={o} class={o === g ? 'on' : ''} onClick={() => setOpt('cat_music', o)}>{o}</span>)}</div>;
+  const chips = <div class="opts cat">{['All', ...MUSIC_GENRES].map((o) => <span key={o} class={o === g ? 'on' : ''} onClick={() => setOpt('cat_music', o)}>{o}</span>)}</div>;
   const body =
     g === 'All' ? (
       <>
@@ -56,14 +62,20 @@ export function Music() {
       </>
     );
   return (
-    <div class="sp" style="flex:1;display:flex;flex-direction:column;min-height:0">
-      <div class="menu-top" style="padding-top:10px"><MenuBtn />{chips}</div>
-      <div class="scroll" style="padding-bottom:70px">{body}</div>
-      <div class="mini" style={`--h:${m.hue}`} onClick={() => nav('nowplaying', { title: m.title, hue: m.hue })}>
-        <u /><div>{m.title}<small>{NOW_DEFAULT.artist}</small></div><I n="heart-outline" />
-        <span onClick={(e) => (e.stopPropagation(), toggleMusic())}><I n={m.playing ? 'pause' : 'play'} /></span>
-        <i class="p" style={m.dur ? `width:${(m.pos / m.dur) * 100}%` : ''} />
+    <div class="sp" style="flex:1;display:flex;flex-direction:column;min-height:0;position:relative">
+      <div class="scroll" style={m.closed ? '' : 'padding-bottom:calc(var(--navh) + 84px)'}>
+        <CarTop />
+        {chips}
+        {body}
       </div>
+      {!m.closed && (
+        <div class="mini" style={`--h:${m.hue}`} onClick={() => nav('nowplaying', { title: m.title, hue: m.hue })}>
+          <u /><div>{m.title}<small>{NOW_DEFAULT.artist}</small></div>
+          <span onClick={(e) => (e.stopPropagation(), toggleMusic())}><I n={m.playing ? 'pause' : 'play'} /></span>
+          <span class="mx" role="button" aria-label="Close player" onClick={(e) => (e.stopPropagation(), closeMusic())}><I n="close" /></span>
+          <i class="p" style={m.dur ? `width:${(m.pos / m.dur) * 100}%` : ''} />
+        </div>
+      )}
     </div>
   );
 }
@@ -87,7 +99,7 @@ export function NowPlaying() {
         <span style="font-size:26px;color:#1ed760" onClick={() => toast('Added to Liked Songs')}><I n="heart" /></span>
         <span style="font-size:26px;margin-left:12px" onClick={() => {
           if (has) return;
-          enqueue([{ titleId: hashS(t), title: t, kind: 'music', season: 1, episode: 1, quality: 1080, audio: 'OG' }]);
+          enqueue([{ poster: null, titleId: hashS(t), title: t, kind: 'music', season: 1, episode: 1, quality: 1080, audio: 'OG' }]);
           dlPop('Download started · Music');
         }}><I n={has ? 'check-circle-outline' : 'download-outline'} /></span>
       </div>

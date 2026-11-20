@@ -1,7 +1,8 @@
 // TypeScript wrapper for the Java plugin CinetorNative (docs/07-native-plugin.md).
 import { registerPlugin, type PluginListenerHandle } from '@capacitor/core';
 
-export interface DlProgress { id: string; bytesDone: number; bytesTotal: number; bytesPerSec: number; status: 'queued' | 'running' | 'paused' | 'done' | 'error'; path?: string; error?: string }
+export interface DlProgress { id: string; bytesDone: number; bytesTotal: number; bytesPerSec: number; status: 'queued' | 'running' | 'paused' | 'done' | 'error'; path?: string; uri?: string; error?: string }
+export interface NetState { warp: boolean; antiDpi: boolean; antiDpiArgs: string; doh: 'cloudflare' | 'google' | 'adguard' | 'custom' | 'off'; dohUrl: string; warpRunning: boolean; antiDpiRunning: boolean; error: string }
 export interface CinetorNativePlugin {
   setBrightness(o: { value: number | null }): Promise<void>;
   getBrightness(): Promise<{ value: number }>;
@@ -15,11 +16,13 @@ export interface CinetorNativePlugin {
   dlResume(o: { id: string }): Promise<void>;
   dlCancel(o: { id: string }): Promise<void>;
   dlList(): Promise<{ items: DlProgress[] }>;
-  saveBytes(o: { relPath: string; base64: string; mime: string; treeUri?: string }): Promise<{ path: string }>;
+  saveBytes(o: { relPath: string; base64: string; mime: string; treeUri?: string }): Promise<{ path: string; uri?: string }>;
   updateDownload(o: { url: string; sha256: string }): Promise<{ file: string }>;
   updateInstall(o: { file: string }): Promise<{ started: boolean; needsPermission?: boolean }>;
   keepAliveForPlayback(o: { on: boolean }): Promise<void>;
   keepScreenOn(o: { on: boolean }): Promise<void>;
+  netGet(): Promise<NetState>;
+  netSet(o: Partial<Pick<NetState, 'warp' | 'antiDpi' | 'antiDpiArgs' | 'doh' | 'dohUrl'>>): Promise<NetState>;
   addListener(e: 'downloadProgress', fn: (p: DlProgress) => void): Promise<PluginListenerHandle>;
   addListener(e: 'updateProgress', fn: (p: { bytesDone: number; bytesTotal: number }) => void): Promise<PluginListenerHandle>;
 }

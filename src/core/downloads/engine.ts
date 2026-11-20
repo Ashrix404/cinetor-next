@@ -7,6 +7,12 @@ export interface DlItem {
   savedAs?: string;
   error?: string;
   restartNeeded?: boolean;
+  /** TMDB poster path for the thumbnail */
+  poster?: string | null;
+  /** native: content:// or file:// uri of the saved file (in-app playback) */
+  uri?: string;
+  /** web: a full copy is kept in OPFS for in-app playback */
+  local?: boolean;
 }
 export type Conn = 16 | 32 | 64;
 export interface DownloadEngine {

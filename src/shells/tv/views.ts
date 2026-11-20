@@ -8,6 +8,8 @@ import { MADE_FOR_YOU, TILES } from '../../core/music';
 import { img, type Title } from '../../core/tmdb';
 import { VERSION } from '../../core/config';
 import { pinTitle } from '../../core/pin';
+import { DOH_PROVIDERS, dohHint, type NetState } from '../../core/net';
+export const NET: { s: NetState | null; busy: boolean } = { s: null, busy: false };
 import { I } from './icons';
 import { adult, library, S } from './state';
 
@@ -127,7 +129,7 @@ export function view(v: string, r: Loader): string {
     case 'adult': return S.adultOk ? feedView('adult', undefined, r) : '<div class="pc"><h2>Adult section is locked</h2></div>';
     case 'music': return `<div class="ttl">Music</div><div class="sub">Playlists made for you</div><div class="grid">${[...MADE_FOR_YOU, ...TILES].map((p) => `<div class="pt" data-f data-do="music" data-t="${esc(p.title)}" style="--h:${p.hue}"><span>${esc(p.title)}</span></div>`).join('')}</div>`;
     case 'tv': return `<div class="ttl">TV</div>${chips('tv', ['Live TV', 'Sports'], S.opt.tv)}` + (S.opt.tv === 'Live TV' ? liveTv() : sports());
-    case 'settings': return `<div class="ttl">Settings</div><div style="height:14px"></div><div class="set" data-f data-do="adultset">${I('shield-lock-outline')}<div class="g">Adult section<small>${adult.isOn() ? 'On · PIN required to open' : 'Off · enable with a PIN'}</small></div><div class="swt${adult.isOn() ? ' on' : ''}"></div></div>${adult.isOn() ? `<div class="set" data-f data-do="pinchg">${I('shield-lock-outline')}<div class="g">Change PIN<small>Verify the current PIN first</small></div></div>` : ''}<div class="set" data-f data-do="update">${I('information-outline')}<div class="g">About Cinetor<small>Version ${VERSION} · Developed by Mythbrix · OK = check for updates</small></div></div>`;
+    case 'settings': return `<div class="ttl">Settings</div><div style="height:14px"></div><div class="set" data-f data-do="adultset">${I('shield-lock-outline')}<div class="g">Adult section<small>${adult.isOn() ? 'On · PIN required to open' : 'Off · enable with a PIN'}</small></div><div class="swt${adult.isOn() ? ' on' : ''}"></div></div>${adult.isOn() ? `<div class="set" data-f data-do="pinchg">${I('shield-lock-outline')}<div class="g">Change PIN<small>Verify the current PIN first</small></div></div>` : ''}${netRows()}<div class="set" data-f data-do="update">${I('information-outline')}<div class="g">About Cinetor<small>Version ${VERSION} · Developed by Mythbrix · OK = check for updates</small></div></div>`;
     case 'search': {
       const q = S.q.trim();
       const res = q ? need(searches as Map<string, Title[]>, q, () => searchMulti(q), r) : undefined;
@@ -156,3 +158,12 @@ export function view(v: string, r: Loader): string {
   return '';
 }
 export { HILITES };
+
+function netRows() {
+  const n = NET.s;
+  if (!n) return '';
+  const sw = (on: boolean) => `<div class="swt${on ? ' on' : ''}"></div>`;
+  return `<div class="set" data-f data-do="net" data-k="warp">${I('shield-lock-outline')}<div class="g">WARP Mode${n.warpRunning ? ' · ON' : ''}<small>${NET.busy ? 'Connecting…' : 'Bypass ISP restrictions with Cloudflare WARP VPN'}</small></div>${sw(n.warp)}</div>
+<div class="set" data-f data-do="net" data-k="dpi">${I('shield-lock-outline')}<div class="g">AntiDPI Mode${n.antiDpiRunning ? ' · ON' : ''}<small>Bypass ISP blocking without VPN</small></div>${sw(n.antiDpi)}</div>
+<div class="set" data-f data-do="net" data-k="doh">${I('information-outline')}<div class="g">DNS over HTTPS: ${esc((DOH_PROVIDERS.find((p) => p.value === n.doh) || DOH_PROVIDERS[4]).label)}<small>${esc(dohHint(n))} · OK = next provider</small></div></div>${n.error ? `<div class="sub" style="margin:0 48px">${esc(n.error)}</div>` : ''}`;
+}

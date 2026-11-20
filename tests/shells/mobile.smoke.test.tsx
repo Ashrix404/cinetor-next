@@ -35,7 +35,7 @@ describe('mobile shell smoke', () => {
       ['anime'], ['drama'], ['comics'], ['tv'], ['settings'], ['music'], ['nowplaying', { title: 'Static Bloom', hue: 10 }], ['watch', { id: 1 }],
       ['info', { t }], ['info', { t: m }], ['info', { t, kind: 'comic' }], ['reader', { t, ch: 214 }], ['person', { id: 7, name: 'Ann Lee' }],
       ['list', { title: 'Trending', items: [t, m] }], ['search'], ['library'], ['downloads'], ['appearance'], ['playerset'], ['substyle'],
-      ['prefs'], ['data'], ['adultset'], ['about'],
+      ['prefs'], ['data'], ['adultset'], ['about'], ['network'],
     ];
     for (const [name, params] of routes) {
       await act(() => st.nav(name, params || {}));
