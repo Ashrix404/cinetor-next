@@ -31,10 +31,8 @@ export function Player() {
   const [pos, setPos] = useState(0);
   const [dur, setDur] = useState(0);
   const [gen, setGen] = useState<{ c: string; p: number } | null>(null);
-  const [lvl, setLvl] = useState<string | null>(null);
   const [, bumpCues] = useState(0);
   const tmr = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const light = useRef({ b: 1 });
   const set = (p: Partial<PlayerState>) => dpl.set({ st: { ...dpl.get().st, ...p } });
   const save = (p: Partial<PlayerState>) => {
     set(p);
@@ -76,21 +74,6 @@ export function Player() {
     fetch(MEDIA_BASE + 'subtitles/' + st.sub + '.vtt').then((r) => r.text()).then((t) => (cues.set(st.sub, parseVtt(t)), bumpCues((n) => n + 1))).catch(() => {});
   }, [st.sub]);
   const seek = (d: number) => v.current && (v.current.currentTime = Math.max(0, Math.min(dur, v.current.currentTime + d)));
-  const volume = (d: number) => {
-    const el = v.current;
-    if (!el) return;
-    el.volume = Math.max(0, Math.min(1, el.volume + d));
-    setLvl('Volume ' + Math.round(el.volume * 100) + '%');
-    setTimeout(() => setLvl(null), 700);
-  };
-  const bright = (d: number) => {
-    const el = v.current;
-    if (!el) return;
-    light.current.b = Math.max(0.3, Math.min(1.5, light.current.b + d));
-    el.style.filter = `brightness(${light.current.b})`;
-    setLvl('Brightness ' + Math.round(light.current.b * 100) + '%');
-    setTimeout(() => setLvl(null), 700);
-  };
   const ep = (fn: typeof nextR) => {
     const n = fn({ ...dpl.get().st, pos }, s.seasons);
     if (n.season !== st.season || n.episode !== st.episode) save({ season: n.season, episode: n.episode, pos: 0 });
@@ -105,8 +88,6 @@ export function Player() {
       if (e.key === ' ') (e.preventDefault(), set({ playing: !dpl.get().st.playing }));
       if (e.key === 'ArrowRight') seek(10);
       if (e.key === 'ArrowLeft') seek(-10);
-      if (e.key === 'ArrowUp') (e.preventDefault(), volume(0.1));
-      if (e.key === 'ArrowDown') (e.preventDefault(), volume(-0.1));
     };
     addEventListener('keydown', k);
     return () => (removeEventListener('keydown', k), clearTimeout(tmr.current));
@@ -145,13 +126,11 @@ export function Player() {
   const pipStyle = s.pip ? 'inset:auto;right:20px;bottom:20px;width:360px;height:203px;border-radius:14px;box-shadow:0 14px 36px rgba(0,0,0,.7)' : '';
   return (
     <div class={'pl' + (hide ? ' hide' : '')} style={pipStyle} onMouseMove={bump}
-      onWheel={(e) => !s.pip && (e.clientX < innerWidth / 2 ? bright(e.deltaY < 0 ? 0.05 : -0.05) : volume(e.deltaY < 0 ? 0.05 : -0.05))}
       onClick={(e) => { const tg = e.target as HTMLElement; if (tg === e.currentTarget || tg.tagName === 'VIDEO') set({ playing: !st.playing }); }}>
       <div class={'vid real fit-' + st.fit} style={{ backgroundImage: bgImg }}>
         <video ref={v} playsInline crossOrigin="anonymous" onTimeUpdate={timeUpd} onLoadedMetadata={() => setDur(v.current!.duration)} onEnded={() => (series2 ? ep(nextR) : set({ playing: false }))} />
       </div>
       {c && !st.locked && <div class="psub" style={css.pos}><span style={css.span}>{c.text}</span></div>}
-      {lvl && <div class="lvl">{lvl}</div>}
       {s.pip ? (
         <div class="ui"><div class="pt1"><button class="pb" onClick={() => dpl.set({ pip: false })}><Ic n="arrow-expand" /></button><div class="gr" /><button class="pb" onClick={() => set({ playing: !st.playing })}><Ic n={st.playing ? 'pause' : 'play'} /></button><button class="pb" onClick={close}><Ic n="close" /></button></div></div>
       ) : st.locked ? (

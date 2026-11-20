@@ -204,7 +204,7 @@ export function Settings() {
       <div class="g srow" onClick={() => go('library')}><Ic n="bookmark-multiple-outline" /><div class="gr">My Library<small>Titles you saved</small></div></div>
       <div class="g srow" onClick={() => go('downloads')}><Ic n="download-circle-outline" /><div class="gr">Downloads<small>Quality and audio are remembered while the app stays open</small></div></div>
       <div class="g srow" onClick={() => (library.clearProgress(), toast('Watch progress cleared'))}><Ic n="history" /><div class="gr">Clear watch progress<small>Reset playback progress for all episodes and videos</small></div></div>
-      <div class="g srow" style={{ cursor: 'default' }}><Ic n="information-outline" /><div class="gr">About<small>Version {VERSION} · {DEVELOPER}. In a browser, the brightness control only changes the video picture.</small></div></div>
+      <div class="g srow" style={{ cursor: 'default' }}><Ic n="information-outline" /><div class="gr">About<small>Version {VERSION} · {DEVELOPER}.</small></div></div>
     </main>
   );
 }

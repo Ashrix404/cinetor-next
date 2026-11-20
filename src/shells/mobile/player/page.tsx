@@ -57,7 +57,10 @@ export function PlayerPage() {
       if (pl.get().live && !pl.get().pip) pl.set({ active: false });
     };
   }, []);
+  // Brightness / volume gestures exist only in the APK (real system values); browsers get none.
+  const gestures = isNative();
   const down = (e: PointerEvent) => {
+    if (!gestures) return;
     if ((e.target as HTMLElement).closest('.pi,.ibtn,.sk,.big,.ptrk,.sheet,.scrim')) return;
     const side = e.clientX < innerWidth / 2 ? 'l' : 'r';
     g.current = { x: e.clientX, y: e.clientY, side, start: side === 'l' ? level.b : level.v };

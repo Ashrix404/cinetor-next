@@ -181,7 +181,6 @@ export function About() {
         <SwRow k="cos" t="Check on startup" d="Look for a new release when Cinetor opens" />
       </Sect>
       <Sect t="Developer"><SRow ic="code-tags" t={DEVELOPER} tail={<span />} /></Sect>
-      <Sect t="Help"><SRow ic="information-outline" t="Brightness in a browser" d="In a browser, the brightness gesture only changes the video picture, not the phone screen." tail={<span />} /></Sect>
       <Sect t="Logs">
         <SRow ic="file-export-outline" t="Export logs" onClick={() => toast('Logs exported')} />
         <SRow ic="file-remove-outline" t="Clear logs" onClick={() => toast('Logs cleared')} />
