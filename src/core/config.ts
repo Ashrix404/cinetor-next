@@ -6,8 +6,10 @@ export const DEVELOPER = 'Developed by Mythbrix';
 export const VERSION: string = env.VITE_APP_VERSION || '0.0.0-dev';
 /** Base version code (X*10000 + Y*100 + Z). The APK adds an ABI digit on top. */
 export const VERSION_CODE: number = Number(env.VITE_APP_CODE || 0);
-/** TMDB token injected from the TMDB_TOKEN secret. Empty in local/dev builds. */
-export const TMDB_TOKEN: string = env.VITE_TMDB_TOKEN || '';
+/** TMDB token: user token by default across Web, Android, and TV. */
+export const TMDB_TOKEN: string =
+  env.VITE_TMDB_TOKEN ||
+  'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJhZjgzMmY3YjlkZjRlNzA4MzE5Y2I0MjAyODExZWE3YyIsIm5iZiI6MTc5NDYzNTI4MC41NzUsInN1YiI6IjZhZjdmNjEwYjIwNGU2ZjcyMDI2ZTBkNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.RirV7QcyM2RXtpKnaEvRYMghSglY1zsHStoq5LVoJ2E';
 export const TMDB_API = 'https://api.themoviedb.org/3';
 export const TMDB_IMG = 'https://image.tmdb.org/t/p/';
 export const GATEWAY_BASE = env.VITE_GATEWAY_BASE || 'https://cinetor-api.sofasraful.workers.dev';
