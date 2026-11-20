@@ -1,0 +1,62 @@
+name: release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
+      - id: v
+        run: |
+          V="${GITHUB_REF_NAME#v}"; IFS=. read -r MA MI PA <<< "$V"
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "base=$((MA*10000 + MI*100 + PA))" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@v7
+        with: { node-version: 26, cache: npm }
+      - uses: actions/setup-java@v6
+        with: { distribution: temurin, java-version: 21 }
+      - uses: android-actions/setup-android@v4
+      - uses: gradle/actions/setup-gradle@v6
+      - run: npm ci && npm run typecheck && npm test && npm run build:web && npm run size
+        env:
+          TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
+          VITE_TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
+          VITE_APP_VERSION: ${{ steps.v.outputs.version }}
+          VITE_APP_CODE: ${{ steps.v.outputs.base }}
+      - run: npx cap sync android && bash scripts/android-assets.sh
+      - run: echo "${{ secrets.ANDROID_KEYSTORE_B64 }}" | base64 -d > "$RUNNER_TEMP/cinetor.jks"
+      - working-directory: android
+        run: ./gradlew assemblePhoneRelease assembleTvRelease -PbaseCode=${{ steps.v.outputs.base }} -PversionName=${{ steps.v.outputs.version }} --no-daemon
+        env:
+          ANDROID_KEYSTORE_FILE: ${{ runner.temp }}/cinetor.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      - run: rm -f "$RUNNER_TEMP/cinetor.jks"
+        if: always()
+      - run: bash scripts/check-apks.sh android/app/build/outputs/apk
+      - run: node scripts/collect-release.mjs "${{ steps.v.outputs.version }}" "${{ steps.v.outputs.base }}"
+      - uses: softprops/action-gh-release@v3
+        with:
+          repository: Ashrix404/cinetor-releases
+          token: ${{ secrets.RELEASE_REPO_TOKEN }}
+          tag_name: ${{ github.ref_name }}
+          name: Cinetor ${{ steps.v.outputs.version }}
+          body_path: out/RELEASE_NOTES.md
+          files: |
+            out/apk/*.apk
+            out/latest.json
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          personal_token: ${{ secrets.RELEASE_REPO_TOKEN }}
+          external_repository: Ashrix404/cinetor-releases
+          publish_branch: gh-pages
+          publish_dir: dist/site
+          keep_files: true
