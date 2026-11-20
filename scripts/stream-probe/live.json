@@ -1,0 +1,467 @@
+[
+[
+"T Sports (old)",
+"https://tsports.live/live.m3u8",
+"native"
+],
+[
+"T Sports (old)",
+"https://tsports.live/live.m3u8",
+"direct"
+],
+[
+"T Sports (old)",
+"https://tsports.live/live.m3u8",
+"proxy"
+],
+[
+"Red Bull TV",
+"https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8",
+"native"
+],
+[
+"Red Bull TV",
+"https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8",
+"direct"
+],
+[
+"Red Bull TV",
+"https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8",
+"proxy"
+],
+[
+"Sport 5",
+"https://r.il.cdn-redge.media/livehls/oil/freetv/live/sport_5/live.livx/playlist.m3u8",
+"native"
+],
+[
+"Sport 5",
+"https://r.il.cdn-redge.media/livehls/oil/freetv/live/sport_5/live.livx/playlist.m3u8",
+"direct"
+],
+[
+"Sport 5",
+"https://r.il.cdn-redge.media/livehls/oil/freetv/live/sport_5/live.livx/playlist.m3u8",
+"proxy"
+],
+[
+"Sport 5 Gold",
+"https://r.il.cdn-redge.media/livehls/oil/freetv/live/sport_5_gold/live.livx/playlist.m3u8",
+"native"
+],
+[
+"Sport 5 Gold",
+"https://r.il.cdn-redge.media/livehls/oil/freetv/live/sport_5_gold/live.livx/playlist.m3u8",
+"direct"
+],
+[
+"Sport 5 Gold",
+"https://r.il.cdn-redge.media/livehls/oil/freetv/live/sport_5_gold/live.livx/playlist.m3u8",
+"proxy"
+],
+[
+"DD Sports",
+"https://d3qs3d2rkhfqrt.cloudfront.net/out/v1/b17adfe543354fdd8d189b110617cddd/index.m3u8",
+"native"
+],
+[
+"DD Sports",
+"https://d3qs3d2rkhfqrt.cloudfront.net/out/v1/b17adfe543354fdd8d189b110617cddd/index.m3u8",
+"direct"
+],
+[
+"DD Sports",
+"https://d3qs3d2rkhfqrt.cloudfront.net/out/v1/b17adfe543354fdd8d189b110617cddd/index.m3u8",
+"proxy"
+],
+[
+"Cricket Gold",
+"https://streams2.sofast.tv/ptnr-yupptv/title-cricketgold/v1/master/611d79b11b77e2f571934fd80ca1413453772ac7/b2048bb8-1686-4432-aa50-647245383e0c/manifest.m3u8",
+"native"
+],
+[
+"Cricket Gold",
+"https://streams2.sofast.tv/ptnr-yupptv/title-cricketgold/v1/master/611d79b11b77e2f571934fd80ca1413453772ac7/b2048bb8-1686-4432-aa50-647245383e0c/manifest.m3u8",
+"direct"
+],
+[
+"Cricket Gold",
+"https://streams2.sofast.tv/ptnr-yupptv/title-cricketgold/v1/master/611d79b11b77e2f571934fd80ca1413453772ac7/b2048bb8-1686-4432-aa50-647245383e0c/manifest.m3u8",
+"proxy"
+],
+[
+"FIFA+",
+"https://95cedebd.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/Vml6aW9fRklGQVBsdXNFbmdsaXNoX0hMUw/playlist.m3u8",
+"native"
+],
+[
+"FIFA+",
+"https://95cedebd.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/Vml6aW9fRklGQVBsdXNFbmdsaXNoX0hMUw/playlist.m3u8",
+"direct"
+],
+[
+"FIFA+",
+"https://95cedebd.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/Vml6aW9fRklGQVBsdXNFbmdsaXNoX0hMUw/playlist.m3u8",
+"proxy"
+],
+[
+"PGA Tour",
+"https://d11k1mnrgfposz.cloudfront.net/playlist.m3u8",
+"native"
+],
+[
+"PGA Tour",
+"https://d11k1mnrgfposz.cloudfront.net/playlist.m3u8",
+"direct"
+],
+[
+"PGA Tour",
+"https://d11k1mnrgfposz.cloudfront.net/playlist.m3u8",
+"proxy"
+],
+[
+"Fox Sports News",
+"https://skynewsau-live-premium.akamaized.net/hls/live/2105307/foxsportsnews/live_1080p.m3u8",
+"native"
+],
+[
+"Fox Sports News",
+"https://skynewsau-live-premium.akamaized.net/hls/live/2105307/foxsportsnews/live_1080p.m3u8",
+"direct"
+],
+[
+"Fox Sports News",
+"https://skynewsau-live-premium.akamaized.net/hls/live/2105307/foxsportsnews/live_1080p.m3u8",
+"proxy"
+],
+[
+"BBC News HD",
+"https://vs-hls-push-ww-live.akamaized.net/x=4/i=urn:bbc:pips:service:bbc_news_channel_hd/t=3840/v=pv14/b=5070016/main.m3u8",
+"native"
+],
+[
+"BBC News HD",
+"https://vs-hls-push-ww-live.akamaized.net/x=4/i=urn:bbc:pips:service:bbc_news_channel_hd/t=3840/v=pv14/b=5070016/main.m3u8",
+"direct"
+],
+[
+"BBC News HD",
+"https://vs-hls-push-ww-live.akamaized.net/x=4/i=urn:bbc:pips:service:bbc_news_channel_hd/t=3840/v=pv14/b=5070016/main.m3u8",
+"proxy"
+],
+[
+"DW News English",
+"https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8",
+"native"
+],
+[
+"DW News English",
+"https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8",
+"direct"
+],
+[
+"DW News English",
+"https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8",
+"proxy"
+],
+[
+"Al Jazeera English",
+"https://live-hls-apps-aje-fa.getaj.net/AJE/index.m3u8",
+"native"
+],
+[
+"Al Jazeera English",
+"https://live-hls-apps-aje-fa.getaj.net/AJE/index.m3u8",
+"direct"
+],
+[
+"Al Jazeera English",
+"https://live-hls-apps-aje-fa.getaj.net/AJE/index.m3u8",
+"proxy"
+],
+[
+"ABC News",
+"https://abc-news-dmd-streams-1.akamaized.net/out/v1/701126012d044971b3fa89406a440133/index.m3u8",
+"native"
+],
+[
+"ABC News",
+"https://abc-news-dmd-streams-1.akamaized.net/out/v1/701126012d044971b3fa89406a440133/index.m3u8",
+"direct"
+],
+[
+"ABC News",
+"https://abc-news-dmd-streams-1.akamaized.net/out/v1/701126012d044971b3fa89406a440133/index.m3u8",
+"proxy"
+],
+[
+"Bangla Vision",
+"https://tvsen5.aynaott.com/banglavision/index.m3u8",
+"native"
+],
+[
+"Bangla Vision",
+"https://tvsen5.aynaott.com/banglavision/index.m3u8",
+"direct"
+],
+[
+"Bangla Vision",
+"https://tvsen5.aynaott.com/banglavision/index.m3u8",
+"proxy"
+],
+[
+"NTV Bangla",
+"https://tvsen5.aynaott.com/xV4jEKf3D9zc/index.m3u8",
+"native"
+],
+[
+"NTV Bangla",
+"https://tvsen5.aynaott.com/xV4jEKf3D9zc/index.m3u8",
+"direct"
+],
+[
+"NTV Bangla",
+"https://tvsen5.aynaott.com/xV4jEKf3D9zc/index.m3u8",
+"proxy"
+],
+[
+"Nexus TV",
+"https://tvsen6.aynaott.com/Epm7WrFa/index.m3u8",
+"native"
+],
+[
+"Nexus TV",
+"https://tvsen6.aynaott.com/Epm7WrFa/index.m3u8",
+"direct"
+],
+[
+"Nexus TV",
+"https://tvsen6.aynaott.com/Epm7WrFa/index.m3u8",
+"proxy"
+],
+[
+"Deshi TV",
+"https://deshitv.deshitv24.net/live/myStream/playlist.m3u8",
+"native"
+],
+[
+"Deshi TV",
+"https://deshitv.deshitv24.net/live/myStream/playlist.m3u8",
+"direct"
+],
+[
+"Deshi TV",
+"https://deshitv.deshitv24.net/live/myStream/playlist.m3u8",
+"proxy"
+],
+[
+"Ekushey TV",
+"https://ekusheyserver.com/etvlivesn.m3u8",
+"native"
+],
+[
+"Ekushey TV",
+"https://ekusheyserver.com/etvlivesn.m3u8",
+"direct"
+],
+[
+"Ekushey TV",
+"https://ekusheyserver.com/etvlivesn.m3u8",
+"proxy"
+],
+[
+"Rajdhani TV",
+"https://stream.shariarsuvo.com/hls5/rajdhanicable.m3u8",
+"native"
+],
+[
+"Rajdhani TV",
+"https://stream.shariarsuvo.com/hls5/rajdhanicable.m3u8",
+"direct"
+],
+[
+"Rajdhani TV",
+"https://stream.shariarsuvo.com/hls5/rajdhanicable.m3u8",
+"proxy"
+],
+[
+"Azan TV",
+"https://dbcanada.sonarbanglatv.com/azantv/atv/index.m3u8",
+"native"
+],
+[
+"Azan TV",
+"https://dbcanada.sonarbanglatv.com/azantv/atv/index.m3u8",
+"direct"
+],
+[
+"Azan TV",
+"https://dbcanada.sonarbanglatv.com/azantv/atv/index.m3u8",
+"proxy"
+],
+[
+"24h Free Movies",
+"https://d1j2u714xk898n.cloudfront.net/scheduler/scheduleMaster/145.m3u8",
+"native"
+],
+[
+"24h Free Movies",
+"https://d1j2u714xk898n.cloudfront.net/scheduler/scheduleMaster/145.m3u8",
+"direct"
+],
+[
+"24h Free Movies",
+"https://d1j2u714xk898n.cloudfront.net/scheduler/scheduleMaster/145.m3u8",
+"proxy"
+],
+[
+"Classic Movies",
+"https://30a-tv.com/feeds/pzaz/30atvmovies.m3u8",
+"native"
+],
+[
+"Classic Movies",
+"https://30a-tv.com/feeds/pzaz/30atvmovies.m3u8",
+"direct"
+],
+[
+"Classic Movies",
+"https://30a-tv.com/feeds/pzaz/30atvmovies.m3u8",
+"proxy"
+],
+[
+"Jalsha Movies",
+"https://box.bbaria.net:8083/Jalsha_Movie/tracks-v1a1/mono.m3u8",
+"native"
+],
+[
+"Jalsha Movies",
+"https://box.bbaria.net:8083/Jalsha_Movie/tracks-v1a1/mono.m3u8",
+"direct"
+],
+[
+"Jalsha Movies",
+"https://box.bbaria.net:8083/Jalsha_Movie/tracks-v1a1/mono.m3u8",
+"proxy"
+],
+[
+"MAX Anime",
+"https://cdnlive.klicgo.net/maxanime/live/playlist.m3u8",
+"native"
+],
+[
+"MAX Anime",
+"https://cdnlive.klicgo.net/maxanime/live/playlist.m3u8",
+"direct"
+],
+[
+"MAX Anime",
+"https://cdnlive.klicgo.net/maxanime/live/playlist.m3u8",
+"proxy"
+],
+[
+"Cartoon Network",
+"https://vodzong.mjunoon.tv:8087/streamtest/cartoon-network-87/live/87H/chunks.m3u8",
+"native"
+],
+[
+"Cartoon Network",
+"https://vodzong.mjunoon.tv:8087/streamtest/cartoon-network-87/live/87H/chunks.m3u8",
+"direct"
+],
+[
+"Cartoon Network",
+"https://vodzong.mjunoon.tv:8087/streamtest/cartoon-network-87/live/87H/chunks.m3u8",
+"proxy"
+],
+[
+"MeTV Toons",
+"https://sr-live-weigel1.akamaized.net/out/v1/0d1dbf29e64e47bc991796cc24fbeb97/index_2.m3u8",
+"native"
+],
+[
+"MeTV Toons",
+"https://sr-live-weigel1.akamaized.net/out/v1/0d1dbf29e64e47bc991796cc24fbeb97/index_2.m3u8",
+"direct"
+],
+[
+"MeTV Toons",
+"https://sr-live-weigel1.akamaized.net/out/v1/0d1dbf29e64e47bc991796cc24fbeb97/index_2.m3u8",
+"proxy"
+],
+[
+"30A Music",
+"https://30a-tv.com/music.m3u8",
+"native"
+],
+[
+"30A Music",
+"https://30a-tv.com/music.m3u8",
+"direct"
+],
+[
+"30A Music",
+"https://30a-tv.com/music.m3u8",
+"proxy"
+],
+[
+"Deluxe Music",
+"https://sdn-global-live-streaming-packager-cache.3qsdn.com/13456/13456_264_live.m3u8",
+"native"
+],
+[
+"Deluxe Music",
+"https://sdn-global-live-streaming-packager-cache.3qsdn.com/13456/13456_264_live.m3u8",
+"direct"
+],
+[
+"Deluxe Music",
+"https://sdn-global-live-streaming-packager-cache.3qsdn.com/13456/13456_264_live.m3u8",
+"proxy"
+],
+[
+"Best of Dance TV",
+"https://m1b2.worldcast.tv/dancetelevisionone/dancetelevisionone.m3u8",
+"native"
+],
+[
+"Best of Dance TV",
+"https://m1b2.worldcast.tv/dancetelevisionone/dancetelevisionone.m3u8",
+"direct"
+],
+[
+"Best of Dance TV",
+"https://m1b2.worldcast.tv/dancetelevisionone/dancetelevisionone.m3u8",
+"proxy"
+],
+[
+"B4U Music",
+"https://amg00877-b4unew-amg00877c3-xiaomi-in-5474.playouts.now.amagi.tv/720p/index.m3u8",
+"native"
+],
+[
+"B4U Music",
+"https://amg00877-b4unew-amg00877c3-xiaomi-in-5474.playouts.now.amagi.tv/720p/index.m3u8",
+"direct"
+],
+[
+"B4U Music",
+"https://amg00877-b4unew-amg00877c3-xiaomi-in-5474.playouts.now.amagi.tv/720p/index.m3u8",
+"proxy"
+],
+[
+"California Music",
+"https://cmc-cmctv-cineverse.amagi.tv/playlist.m3u8",
+"native"
+],
+[
+"California Music",
+"https://cmc-cmctv-cineverse.amagi.tv/playlist.m3u8",
+"direct"
+],
+[
+"California Music",
+"https://cmc-cmctv-cineverse.amagi.tv/playlist.m3u8",
+"proxy"
+]
+]

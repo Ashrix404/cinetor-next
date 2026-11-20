@@ -1,0 +1,30 @@
+name: stream-probe
+# Diagnostic only: loads every embed server in an iframe (real Chrome) and every live channel
+# through hls.js (direct + gateway proxy) and prints what really plays. Never deploys anything.
+on:
+  workflow_dispatch:
+  push:
+    branches: [fix/playback-sources]
+    paths: ['scripts/stream-probe/**', '.github/workflows/stream-probe.yml']
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 26 }
+      - name: install playwright (CI only)
+        working-directory: scripts/stream-probe
+        run: npm i --no-save --no-package-lock playwright@1.65.1
+      - name: probe
+        working-directory: scripts/stream-probe
+        run: |
+          python3 -m http.server 8080 >/dev/null 2>&1 &
+          sleep 1
+          export PROBE_EMBEDS="$(cat embeds.json)" PROBE_LIVE="$(cat live.json)"
+          node probe.mjs | tee probe.txt
+      - uses: actions/upload-artifact@v7
+        with: { name: stream-probe, path: 'scripts/stream-probe/probe.*', retention-days: 7 }
