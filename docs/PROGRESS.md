@@ -150,6 +150,12 @@
 - **UNVERIFIED (device):** guard + UA metadata on real WebView versions; header injection for `<video>` range requests; old TV WebViews without DOCUMENT_START_SCRIPT; downloads (no direct file exists from the gateway today).
 - **Needs the user:** antiblock gateway signing secret or a server-side MovieBox provider for direct files.
 
+### U05 YouTube Music & Adult Section Isolation & Full Deploy — 2026-11-21
+- **YouTube Music integration**: InnerTube API integrated on Cloudflare gateway (`cinetor-api`); `WEB_REMIX` client with visitorData provides Home/Trending shelves, Charts, and search results; `VISIONOS` & `IOS_PRODUCER` clients with visitorData provide direct audio streams (itags 140 128k AAC and 251 Opus) without PO-token stalls. Gateway `/v1/music/stream` endpoint redirects to proxied audio stream with byte ranges, enabling native `<audio>` playback on mobile, web, desktop, and TV.
+- **Adult Section & Isolation**: Central classifier & sanitizer (`src/core/adult.ts`), strict PIN gate, auto-relock on app backgrounding / visibility change. Adult content never leaks to Home, Search, Library, Downloads, or Recents. Real mature TMDB feeds (`src/core/adult-source.ts`) with keyword filters and minor risk exclusion.
+- **Player & Downloads**: v2 player architecture, embed detection guard, download options aggregator, single-tap controls, gestures, and glass styling merged into main.
+- **Cloudflare Edge Gateway**: Deployed live to `https://cinetor-api.sofasraful.workers.dev` with full music routes and stream proxy.
+
 ## Releases
 
 | Version | Date | Notes |

@@ -13,3 +13,5 @@ config.js
 *.b64
 media/out/
 android/app/src/main/jniLibs/
+.claude/
+
