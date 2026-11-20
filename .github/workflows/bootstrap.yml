@@ -1,0 +1,31 @@
+name: bootstrap
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "lock = create package-lock.json, android = run cap add android"
+        required: true
+        type: choice
+        options: [lock, android]
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 26 }
+      - if: inputs.task == 'lock'
+        run: npm install --no-audit --no-fund
+      - if: inputs.task == 'android'
+        run: |
+          npm ci
+          npm run build:mobile
+          npx cap add android
+      - run: |
+          git config user.name "cinetor-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for p in package-lock.json android; do [ -e "$p" ] && git add -A "$p"; done
+          git commit -m "chore(bootstrap): ${{ inputs.task }}" || echo "nothing to commit"
+          git push
