@@ -77,7 +77,7 @@ export function DlSheet() {
     const sels = { ...d.sels, [d.s]: d.sel };
     const specs = Object.entries(sels).flatMap(([sn, sl]) =>
       Object.keys(sl).filter((k) => sl[+k]).map((k) => ({
-        titleId: d.title.id, title: d.title.title, kind: kindOf(d.kind) as 'video' | 'comic', season: +sn, episode: +k,
+        poster: d.title.poster, titleId: d.title.id, title: d.title.title, kind: kindOf(d.kind) as 'video' | 'comic', season: +sn, episode: +k,
         quality: u.dq as Quality, audio: comic ? 'OG' : u.da, movie, chapter: comic ? 214 - (+k - 1) : undefined,
       })),
     );
@@ -95,7 +95,8 @@ export function DlSheet() {
     <>
       <div class="scrim" onClick={() => setUi({ dls: null })} />
       <div class="sheet dlsheet" style="max-height:82%;overflow:auto;z-index:50">
-        <div class="shd"><b style="font-size:17px;display:flex;gap:8px;align-items:center"><I n="download-outline" />{d.title.title}</b><span class="grow" /><span style="font-size:22px;cursor:pointer" onClick={() => setUi({ dls: null })}><I n="close" /></span></div>
+        <div class="shd"><b style="font-size:17px;display:flex;gap:8px;align-items:center"><I n="download-outline" /><span>{d.title.title}</span></b><span style="font-size:22px;cursor:pointer;flex:none" onClick={() => setUi({ dls: null })}><I n="close" /></span></div>
+        <div class="dlbody">
         {!comic && !movie && (
           <>
             <div class="dlh">Season</div>
@@ -126,6 +127,7 @@ export function DlSheet() {
             <div class="lgrid">{DUBS.map(([c, nme]) => <span key={c} class={'lg' + (c === u.da ? ' has' : '')} onClick={() => setUi({ da: c })}>{nme}</span>)}</div>
           </>
         )}
+        </div>
         <div class="dlf"><span class="body-s">{cnt} selected{!comic && ` · ${gb} GB`}</span><span class={'btn' + (cnt ? '' : ' dis')} onClick={go}><I n="download" /> Download</span></div>
       </div>
     </>

@@ -49,7 +49,7 @@ export function Vcore({ land, onFs }: { land: boolean; onFs: () => void }) {
   const dots = <PBtn ic="dots-vertical" act={sheet('settings')} label="More" />;
   const bgI = <PBtn ic="headphones" on={p.bgPlay} act={() => patch({ bgPlay: !p.bgPlay })} label="Background play" />;
   const lockI = (
-    <div class="pl rm" style={land ? 'left:14px;right:auto' : ''}>
+    <div class={'pl rm' + (land ? ' lk' : '')}>
       <PBtn ic={p.locked ? 'lock' : 'lock-open-variant-outline'} on={p.locked} act={() => (patch({ locked: !p.locked }), setUi({ sheet: false }))} label="Lock" />
     </div>
   );
@@ -93,7 +93,7 @@ export function Vcore({ land, onFs }: { land: boolean; onFs: () => void }) {
         <div class="grp">{qI}{spd}{pipI}{dots}</div>
       </div>
       {lockI}
-      <div class="pl rm" style="left:auto;right:14px">{bgI}</div>
+      <div class="pl rm bgp" style="left:auto">{bgI}</div>
       {center}
       <div class="pl bl">
         {subsI}

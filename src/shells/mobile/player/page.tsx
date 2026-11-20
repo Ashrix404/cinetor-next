@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { I } from '../ui/icons';
 import { isIOS, isNative } from '../../../core/platform';
 import { back, param } from '../state';
-import { patch, pl, startLive } from './store';
+import { ctl, onPlayerTap, patch, pl, showCtl, startLive } from './store';
+import { useStore } from '../ui/hooks';
 import { Vcore } from './controls';
 import { PlayerSheet } from './sheets';
 import { level, readLevels, resetBrightness, setBrightness, setVolume } from './media-ctl';
@@ -40,7 +41,8 @@ export function PlayerPage() {
   const live = param<boolean>('live');
   const [pill, setPill] = useState<{ ic: string; v: number } | null>(null);
   const [portrait, setPortrait] = useState(innerHeight > innerWidth);
-  const g = useRef<{ x: number; y: number; side: 'l' | 'r'; start: number } | null>(null);
+  const g = useRef<{ x: number; y: number; side: 'l' | 'r'; start: number; moved?: boolean } | null>(null);
+  const c = useStore(ctl);
   useEffect(() => {
     if (live && !pl.get().active) startLive(param<string>('label') || 'Live', param<number>('hue') || 200);
     if (!pl.get().active) back();
@@ -48,6 +50,7 @@ export function PlayerPage() {
     patch({ mode: 'fullscreen' });
     enterFs();
     readLevels();
+    showCtl();
     const onR = () => setPortrait(innerHeight > innerWidth);
     addEventListener('resize', onR);
     return () => {
@@ -70,18 +73,19 @@ export function PlayerPage() {
     if (!d || pl.get().st.locked) return;
     const dy = d.y - e.clientY;
     if (Math.abs(dy) < 10 || Math.abs(dy) < Math.abs(e.clientX - d.x)) return;
+    d.moved = true;
     const v = Math.max(0, Math.min(1, d.start + dy / (innerHeight * 0.8)));
     if (d.side === 'l') setBrightness(v);
     else setVolume(v);
     setPill({ ic: d.side === 'l' ? 'white-balance-sunny' : 'volume-high', v });
   };
   const up = () => {
-    g.current = null;
+    setTimeout(() => (g.current = null), 0);
     setTimeout(() => setPill(null), 600);
   };
   if (!pl.get().active) return null;
   return (
-    <div style="position:absolute;inset:0;background:#000;touch-action:none" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
+    <div class={'plbox' + (c.hidden ? ' ctlhide' : '')} style="position:absolute;inset:0;background:#000;touch-action:none" onClick={(e) => !g.current?.moved && onPlayerTap(e)} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
       <Vcore land onFs={() => {}} />
       {pill && <div class="lvl"><I n={pill.ic} />{Math.round(pill.v * 100)}%</div>}
       {isIOS() && !isNative() && portrait && <div class="rotate"><div><I n="phone-rotate-landscape" /><div>Rotate your phone</div></div></div>}

@@ -2,7 +2,10 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { pinPress, pinTitle, startPin } from '../../core/pin';
 import { loadSeason } from '../../core/details';
-import { active, cancel, dlSettings, dlStore, enqueue, finished, pause, pauseAll, resume, speeds } from '../../core/downloads';
+import { active, cancel, dlSettings, dlStore, enqueue, finished, pause, pauseAll, playableUrl, resume, speeds } from '../../core/downloads';
+import { img } from '../../core/tmdb';
+import { WEB_NOTE } from '../../core/net';
+import { play } from './player';
 import { pickWebFolder } from '../../core/downloads/save';
 import { VERSION, DEVELOPER } from '../../core/config';
 import type { Quality } from '../../core/series-settings';
@@ -52,8 +55,8 @@ export function DlSheet() {
   const start = () => {
     const movie = d.t.mediaType !== 'tv' && !d.comic;
     const specs = movie
-      ? [{ titleId: d.t.id, title: d.t.title, kind: 'video' as const, season: 1, episode: 1, quality: u.dq as Quality, audio: u.da, movie: true }]
-      : Object.entries(sels).flatMap(([sn, o]) => Object.keys(o).filter((k) => o[+k]).map((k) => ({ titleId: d.t.id, title: d.t.title, kind: d.comic ? ('comic' as const) : ('video' as const), season: +sn, episode: +k, quality: u.dq as Quality, audio: d.comic ? 'OG' : u.da, chapter: d.comic ? 214 - (+k - 1) : undefined })));
+      ? [{ poster: d.t.poster, titleId: d.t.id, title: d.t.title, kind: 'video' as const, season: 1, episode: 1, quality: u.dq as Quality, audio: u.da, movie: true }]
+      : Object.entries(sels).flatMap(([sn, o]) => Object.keys(o).filter((k) => o[+k]).map((k) => ({ poster: d.t.poster, titleId: d.t.id, title: d.t.title, kind: d.comic ? ('comic' as const) : ('video' as const), season: +sn, episode: +k, quality: u.dq as Quality, audio: d.comic ? 'OG' : u.da, chapter: d.comic ? 214 - (+k - 1) : undefined })));
     const c = enqueue(specs);
     close();
     if (c) dlPop('Download started · ' + c + ' item' + (c > 1 ? 's' : '') + (d.comic ? ' (PDF)' : ' · ' + u.dq + 'p'));
@@ -158,8 +161,8 @@ export function Downloads() {
     const lab = d.kind === 'comic' ? 'Chapter ' + (214 - (d.episode - 1)) + ' · PDF' : d.kind === 'music' ? 'Music · MP3' : `S${d.season} · E${d.episode} · ${d.quality}p · ${d.audio}`;
     const p = d.bytesTotal ? (d.bytesDone / d.bytesTotal) * 100 : 0, sp = (speeds.get()[d.id] || 0) / 1048576;
     return (
-      <div class="g srow" key={d.id} style={{ cursor: 'default', flexWrap: 'wrap' }}>
-        <Ic n={isDone ? 'check-circle' : d.kind === 'comic' ? 'file-pdf-box' : d.kind === 'music' ? 'music-note' : 'download'} />
+      <div class="g srow" key={d.id} style={{ cursor: isDone ? 'pointer' : 'default', flexWrap: 'wrap' }} onClick={() => isDone && d.kind === 'video' && void playableUrl(d).then((u) => (u ? play({ id: d.titleId, mediaType: /\.S\d+E\d+\./.test(d.path) ? 'tv' : 'movie', title: d.title, poster: d.poster || null, backdrop: null, rating: 0, year: '', overview: '', genreIds: [] }, d.season || 1, d.episode || 1, undefined, u) : toast('Open it from your Downloads folder')))}>
+        <span style={{ width: 46, height: 66, borderRadius: 10, flex: 'none', background: d.poster ? `center/cover url(${img(d.poster, 'w185')})` : 'var(--s3)', display: 'grid', placeItems: 'center' }}>{isDone && d.kind === 'video' && <Ic n="play" />}</span>
         <div class="gr">{d.title}
           <small>{lab} · {isDone ? 'Done' : d.restartNeeded ? 'Paused · restart needed' : Math.round(p) + '%' + (d.status === 'paused' ? ' · Paused' : ' · ' + sp.toFixed(1) + ' MB/s')}</small>
           <small style={{ opacity: 0.7, wordBreak: 'break-all' }}>{d.path}{d.savedAs ? ' → ' + d.savedAs : ''}</small>
@@ -204,6 +207,7 @@ export function Settings() {
       <div class="g srow" onClick={() => go('library')}><Ic n="bookmark-multiple-outline" /><div class="gr">My Library<small>Titles you saved</small></div></div>
       <div class="g srow" onClick={() => go('downloads')}><Ic n="download-circle-outline" /><div class="gr">Downloads<small>Quality and audio are remembered while the app stays open</small></div></div>
       <div class="g srow" onClick={() => (library.clearProgress(), toast('Watch progress cleared'))}><Ic n="history" /><div class="gr">Clear watch progress<small>Reset playback progress for all episodes and videos</small></div></div>
+      <div class="g srow" style={{ cursor: 'default' }}><Ic n="shield-lock-outline" /><div class="gr">Network · WARP, AntiDPI, DNS over HTTPS<small>{WEB_NOTE}</small></div></div>
       <div class="g srow" style={{ cursor: 'default' }}><Ic n="information-outline" /><div class="gr">About<small>Version {VERSION} · {DEVELOPER}.</small></div></div>
     </main>
   );

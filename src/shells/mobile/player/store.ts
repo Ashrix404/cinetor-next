@@ -22,13 +22,36 @@ export interface Pl {
   /** subtitle tracks that exist per title id: generated / online / embedded */
   tracks: Record<number, { code: string; src: 'auto' | 'online' | 'emb' }[]>;
   gen: { titleId: number; code: string; p: number } | null;
+  /** set when playing a downloaded file (offline) */
+  local: string | null;
 }
 export const pl = createStore<Pl>('pl', {
   active: false, pip: false, px: null, py: null, live: false, hue: 215, title: null, label: '',
-  st: initialState({ titleId: 0, title: '', mediaType: 'movie' }), seasons: MOCK_SEASONS, tracks: {}, gen: null,
+  st: initialState({ titleId: 0, title: '', mediaType: 'movie' }), seasons: MOCK_SEASONS, tracks: {}, gen: null, local: null,
 }, false);
 /** Position ticks live in their own store so only the seek bar re-renders. */
 export const ptime = createStore('ptime', { pos: 0, dur: 0 }, false);
+/** Controls visibility: tap empty space toggles, auto-hide 3 s after showing while playing. */
+export const ctl = createStore('ctl', { hidden: false }, false);
+let ctlTimer: ReturnType<typeof setTimeout> | undefined;
+export function showCtl() {
+  ctl.set({ hidden: false });
+  clearTimeout(ctlTimer);
+  ctlTimer = setTimeout(() => {
+    const s = pl.get();
+    if (s.active && s.st.playing && !s.pip) ctl.set({ hidden: true });
+  }, 3000);
+}
+export function toggleCtl() {
+  if (ctl.get().hidden) showCtl();
+  else (clearTimeout(ctlTimer), ctl.set({ hidden: true }));
+}
+/** A tap on the video or empty space (not on a control) toggles the controls. */
+export function onPlayerTap(e: MouseEvent) {
+  const t = e.target as HTMLElement;
+  if (t.closest('.pi,.ibtn,.sk,.big,.ptrk,.seek,.grp,.sheet,.scrim,.genpill')) return showCtl();
+  toggleCtl();
+}
 
 let video: HTMLVideoElement | null = null;
 export function getVideo(): HTMLVideoElement {
@@ -78,7 +101,7 @@ function keepAwake(on: boolean) {
 
 function load(q: Quality, at = 0, play = true) {
   const v = getVideo();
-  const src = srcFor(q);
+  const src = pl.get().local || srcFor(q);
   if (v.src !== src) v.src = src;
   const seek = () => {
     try {
@@ -94,13 +117,13 @@ function load(q: Quality, at = 0, play = true) {
 }
 
 /** Prototype `startAt`: start a title/episode with the series memory applied. */
-export function startAt(t: Title, season: number, episode: number, o: { seasons?: Seasons; hue?: number } = {}) {
+export function startAt(t: Title, season: number, episode: number, o: { seasons?: Seasons; hue?: number; local?: string } = {}) {
   const keep = pl.get().st, mem = series.load(t.id);
   const st = initialState({
     titleId: t.id, title: t.title, mediaType: t.mediaType, season, episode, speed: keep.speed, fit: keep.fit, hwDecoder: keep.hwDecoder,
     quality: mem.quality, audio: mem.audio, sub: mem.sub, mode: 'inline',
   });
-  pl.set({ active: true, pip: false, live: false, title: t, label: '', hue: o.hue ?? pl.get().hue, st, seasons: o.seasons || pl.get().seasons });
+  pl.set({ active: true, pip: false, live: false, title: t, label: '', hue: o.hue ?? pl.get().hue, st, seasons: o.seasons || pl.get().seasons, local: o.local || null });
   const resume = library.progress(t.id, season, episode);
   load(st.quality, resume > 0.02 && resume < 0.97 ? resume * 120 : 0);
 }
@@ -108,7 +131,7 @@ export function startAt(t: Title, season: number, episode: number, o: { seasons?
 /** Live channel / match: plays the 720p clip with a LIVE badge. */
 export function startLive(label: string, hue: number) {
   const st = initialState({ titleId: -1, title: label, mediaType: 'live', quality: 720, mode: 'fullscreen' });
-  pl.set({ active: true, pip: false, live: true, title: null, label, hue, st });
+  pl.set({ active: true, pip: false, live: true, title: null, label, hue, st, local: null });
   load(720, 0);
 }
 
@@ -130,7 +153,7 @@ export function setQuality(q: Quality) {
   const v = getVideo(), at = v.currentTime, playing = pl.get().st.playing;
   patch({ quality: q });
   saveSeries();
-  load(q, at, playing);
+  if (!pl.get().local) load(q, at, playing); // a downloaded file has one quality
 }
 export function setSpeed(sp: PlayerState['speed']) {
   patch({ speed: sp });

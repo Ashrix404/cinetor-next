@@ -46,6 +46,11 @@ jobs:
       - if: steps.chk.outputs.ok == 'true'
         uses: gradle/actions/setup-gradle@v6
       - if: steps.chk.outputs.ok == 'true'
+        uses: actions/setup-go@v7
+        with: { go-version: 1.26.11, cache: false }
+      - if: steps.chk.outputs.ok == 'true'
+        run: bash scripts/build-net-bins.sh
+      - if: steps.chk.outputs.ok == 'true'
         run: |
           npm ci
           npm run build:mobile

@@ -7,7 +7,8 @@ import { I, MARK, SPRITE } from './icons';
 import { normKey } from './keys';
 import { $$, current, focus, move } from './spatial-nav';
 import { adult, frame, library, S } from './state';
-import { errors, feeds, details, LISTS, REG, view } from './views';
+import { errors, feeds, details, LISTS, NET, REG, view } from './views';
+import { netGet, netSet, netSupported, DOH_PROVIDERS } from '../../core/net';
 import * as player from './player';
 import { checkUpdate, updateDialog } from './updates';
 
@@ -175,6 +176,18 @@ function act(el: HTMLElement | null) {
     case 'key': return pinKey(d.key!);
     case 'music': musicEl = musicEl || new Audio(); musicEl.src = trackUrl(d.t!); void musicEl.play().catch(() => {}); return toast('Playing ' + d.t);
     case 'update': return void checkUpdate(true, toast);
+    case 'net': {
+      const n = NET.s;
+      if (!n || NET.busy) return;
+      const k = d.k;
+      // TV: Custom DoH needs typing a URL, so OK cycles Cloudflare → Google → AdGuard → Off.
+      const order = DOH_PROVIDERS.map((p) => p.value).filter((v) => v !== 'custom');
+      const p = k === 'warp' ? { warp: !n.warp } : k === 'dpi' ? { antiDpi: !n.antiDpi } : { doh: order[(order.indexOf(n.doh as (typeof order)[number]) + 1) % order.length] };
+      NET.busy = true;
+      render(true);
+      void netSet(p).then((r) => ((NET.s = r), (NET.busy = false), r.error && toast(r.error), render(true)), () => ((NET.busy = false), render(true)));
+      return;
+    }
     case 'typing': { const inp = el as HTMLInputElement; inp.focus(); inp.onchange = () => ((S.q = inp.value), render(true)); return; }
     case 'pback': player.close(); return render(true);
     case 'ptoggle': return player.toggle();
@@ -242,6 +255,7 @@ const fmt = (x: number) => [Math.floor(x / 3600), Math.floor(x / 60) % 60, Math.
 document.addEventListener('visibilitychange', () => (document.hidden ? clearInterval(ticker) : startTicker()));
 startTicker();
 
+if (netSupported()) void netGet().then((n) => ((NET.s = n), S.view === 'settings' && render(true)));
 render();
 // splash: static logo, one opacity fade, ≤ 1.4 s (rule 13)
 const sp = document.createElement('div');

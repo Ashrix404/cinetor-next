@@ -601,3 +601,98 @@ a{color:inherit}
 .ytr iframe{position:absolute;left:50%;top:50%;width:177.78%;height:100%;min-width:100%;min-height:56.25vw;transform:translate(-50%,-50%) scale(1.15);border:0}
 
 .panelc .pn{position:absolute;right:8px;bottom:6px;font-size:11px;color:#555;font-weight:700;font-family:Roboto}
+
+/* ===== polish round 2026-11-20 ===== */
+#app{--navh:calc(64px + env(safe-area-inset-bottom))}
+/* horizontal rows swipe (were overflow:hidden) */
+.rail,.covers,.cast,.chr{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;touch-action:pan-x pan-y}
+.rail::-webkit-scrollbar,.covers::-webkit-scrollbar,.cast::-webkit-scrollbar,.chr::-webkit-scrollbar{display:none}
+.rail>*,.covers>*,.cast>*{scroll-snap-align:start}
+.rail{padding-right:16px}.rail::after{content:"";flex:0 0 6px}
+
+/* bottom nav floats over the content, translucent like the top banner (not a stacked block) */
+#app.hasnav .nav{position:absolute;left:0;right:0;bottom:0;z-index:30;border-top:0;
+  background:rgba(0,0,0,.82);background:linear-gradient(0deg,color-mix(in srgb,var(--bg) 94%,transparent) 0%,color-mix(in srgb,var(--bg) 78%,transparent) 100%);
+  -webkit-backdrop-filter:blur(18px) saturate(140%);backdrop-filter:blur(18px) saturate(140%)}
+#app.hasnav .scr .scroll{padding-bottom:calc(var(--navh) + 12px)}
+.nav div{text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.bbar{background:rgba(0,0,0,.78)!important;background:color-mix(in srgb,var(--bg) 80%,transparent)!important;-webkit-backdrop-filter:blur(18px) saturate(140%);backdrop-filter:blur(18px) saturate(140%)}
+
+/* music mini player sits right above the bottom nav */
+.mini{bottom:calc(var(--navh) + 8px);left:10px;right:10px;border-radius:14px}
+.mini .mx{font-size:20px;opacity:.85;padding:6px;margin-left:2px}
+.mini u{width:40px;height:40px;border-radius:8px;flex:none;background:linear-gradient(135deg,hsl(var(--h) 70% 55%),hsl(calc(var(--h) + 60) 60% 22%))}
+.mini>div{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* "Download started · View" popup: one line, never overlapping */
+.toast{max-width:calc(100% - 32px);bottom:calc(var(--navh) + 18px)}
+.toast.dlpop{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 14px;border-radius:16px}
+.toast.dlpop>span:not(.mi){flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toast.dlpop>b{flex:none;background:#151515;color:#fff;border-radius:999px;padding:5px 14px;font-size:12px;font-weight:600}
+
+/* download sheet: same size for every title, header ellipsis, body scrolls, footer pinned */
+.sheet.dlsheet{height:78%;max-height:78%;display:flex;flex-direction:column;overflow:hidden!important;padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+.dlsheet .shd{flex:none;min-width:0}
+.dlsheet .shd b{min-width:0;flex:1;overflow:hidden}
+.dlsheet .shd b>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dlbody{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;margin:0 -4px;padding:0 4px}
+.dlsheet .dlf{flex:none;padding-top:10px}
+.dle span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+
+/* player controls: tap empty space to hide/show, auto-hide after 3 s */
+.ivp .pl,.plbox .pl,.ivp .bgmark{transition:opacity .25s}
+.ctlhide .pl{opacity:0;pointer-events:none}
+/* landscape: bigger, evenly sized controls; lock moved inward away from the camera cut-out */
+#app.land .pi{min-width:46px;height:46px;font-size:24px;padding:0 12px!important}
+#app.land .pl .grp,#app.land .pl.bl{gap:12px}
+#app.land .pl.t{left:max(24px,env(safe-area-inset-left));right:max(24px,env(safe-area-inset-right));top:12px}
+#app.land .pl.t .ibtn{width:48px;height:48px;font-size:26px}
+#app.land .pl.c{gap:72px}
+#app.land .pl.c .big{width:84px;height:84px;font-size:46px}
+#app.land .pl.c .sk{font-size:48px}
+#app.land .pl.bl{left:max(28px,env(safe-area-inset-left));bottom:56px}
+#app.land .pl.b{left:max(28px,env(safe-area-inset-left));right:max(28px,env(safe-area-inset-right));bottom:14px}
+#app.land .seek{font-size:14px;gap:14px}
+#app.land .seek .trk{height:5px}
+#app.land .pl.lk{left:calc(72px + env(safe-area-inset-left))!important;right:auto!important}
+#app.land .pl.rm.bgp{right:calc(40px + env(safe-area-inset-right))!important}
+
+/* downloads page (redesign) */
+.dlhead{display:flex;align-items:center;gap:8px;padding:6px 8px 2px}
+.dlhead h3{margin:0;font-size:22px;font-weight:600;flex:1;padding-left:6px}
+.dlsum{margin:4px 16px 12px;padding:14px 16px;border-radius:20px;background:var(--c-low);display:flex;align-items:center;gap:14px}
+.dlsum .ring{width:46px;height:46px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:22px;background:conic-gradient(var(--primary) calc(var(--p)*1%),rgba(255,255,255,.1) 0)}
+.dlsum .ring i{width:38px;height:38px;border-radius:50%;background:var(--c-low);display:grid;place-items:center}
+.dlsum b{display:block;font-size:15px;font-weight:600}.dlsum small{color:var(--on-var);font-size:12px}
+.dlsec{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 8px;font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--on-var)}
+.dlsec span{text-transform:none;letter-spacing:0;color:var(--primary);font-weight:500;cursor:pointer}
+.dlitem{display:flex;align-items:center;gap:12px;margin:0 12px 8px;padding:8px;border-radius:18px;background:var(--c-low)}
+.dlitem .art{width:58px;height:84px;border-radius:12px;flex:none;position:relative;overflow:hidden;background:linear-gradient(160deg,hsl(var(--h) 55% 38%),hsl(calc(var(--h) + 40) 50% 14%));background-size:cover;background-position:center}
+.dlitem .art .pl0{position:absolute;inset:0;display:grid;place-items:center;font-size:26px;color:#fff;background:rgba(0,0,0,.35)}
+.dlitem .tx{flex:1;min-width:0}
+.dlitem .tx b{display:block;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dlitem .tx small{display:block;color:var(--on-var);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dlitem .bar{height:4px;border-radius:2px;background:rgba(255,255,255,.12);margin-top:8px;overflow:hidden}
+.dlitem .bar b{display:block;height:100%;background:var(--primary);border-radius:2px}
+.dlitem .act{display:flex;gap:2px;flex:none}
+.dlitem .act span{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:22px;color:var(--on)}
+.dlitem .act span.pri{background:var(--primary);color:var(--on-primary)}
+.dlempty{display:flex;flex-direction:column;align-items:center;gap:8px;padding:80px 24px;text-align:center;color:var(--on-var)}
+.dlempty .mi{font-size:56px;color:var(--primary)}
+.dlset .lbl2{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--on-var);margin:14px 0 8px}
+.dlset .pill2 span{flex:1;text-align:center}
+
+/* network settings */
+.netrow{display:flex;align-items:center;gap:14px;padding:14px 16px}
+.netrow .tx{flex:1;min-width:0}.netrow .tx b{display:block;font-size:16px;font-weight:500}.netrow .tx small{display:block;color:var(--on-var);font-size:13px;margin-top:2px}
+.netbadge{margin-left:6px;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--primary);color:var(--on-primary);vertical-align:2px}
+.netbox{padding:0 16px 14px}
+.netbox .preset{display:block;padding:10px 12px;border-radius:12px;margin-bottom:6px;background:var(--c-high)}
+.netbox .preset.on{background:var(--s-cont);color:var(--on-s-cont)}
+.netbox .preset small{display:block;color:var(--on-var);font-size:12px}
+.netbox textarea,.netbox input{width:100%;box-sizing:border-box;background:var(--c-high);color:var(--on);border:0;border-radius:12px;padding:10px 12px;font:inherit;font-size:13px;font-family:ui-monospace,monospace}
+.netnote{margin:6px 16px 0;padding:10px 12px;border-radius:12px;background:var(--c-high);font-size:12px;color:var(--on-var)}
+.netsel{display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 14px}
+.netsel span{padding:8px 14px;border-radius:999px;background:var(--c-high);font-size:13px}
+.netsel span.on{background:var(--primary);color:var(--on-primary)}
+.dis{opacity:.45;pointer-events:none}

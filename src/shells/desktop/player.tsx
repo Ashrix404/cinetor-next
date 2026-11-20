@@ -9,15 +9,15 @@ import { img, type Title } from '../../core/tmdb';
 import { library, series, toast } from './state';
 import { Ic, Sv } from './ui';
 
-interface DPl { on: boolean; title: Title | null; live: string; st: PlayerState; seasons: Seasons; pip: boolean }
+interface DPl { on: boolean; title: Title | null; live: string; st: PlayerState; seasons: Seasons; pip: boolean; local?: string | null }
 export const dpl = createStore<DPl>('d-pl', { on: false, title: null, live: '', st: initialState({ titleId: 0, title: '', mediaType: 'movie' }), seasons: MOCK_SEASONS, pip: false }, false);
 
-export function play(t: Title, season = 1, episode = 1, seasons?: Seasons) {
+export function play(t: Title, season = 1, episode = 1, seasons?: Seasons, local?: string) {
   const m = series.load(t.id), k = dpl.get().st;
-  dpl.set({ on: true, pip: false, title: t, live: '', seasons: seasons || dpl.get().seasons, st: initialState({ titleId: t.id, title: t.title, mediaType: t.mediaType, season, episode, quality: m.quality, audio: m.audio, sub: m.sub, speed: k.speed, fit: k.fit }) });
+  dpl.set({ on: true, pip: false, local: local || null, title: t, live: '', seasons: seasons || dpl.get().seasons, st: initialState({ titleId: t.id, title: t.title, mediaType: t.mediaType, season, episode, quality: m.quality, audio: m.audio, sub: m.sub, speed: k.speed, fit: k.fit }) });
 }
 export function playLive(label: string) {
-  dpl.set({ on: true, pip: false, title: null, live: label, st: initialState({ titleId: -1, title: label, mediaType: 'live', quality: 720 }) });
+  dpl.set({ on: true, pip: false, local: null, title: null, live: label, st: initialState({ titleId: -1, title: label, mediaType: 'live', quality: 720 }) });
 }
 
 const cues = new Map<string, Cue[]>();
@@ -50,7 +50,7 @@ export function Player() {
     tmr.current = setTimeout(() => setHide(true), 3500);
   };
   // source + resume
-  const src = MEDIA_BASE + clipFor(st.quality);
+  const src = s.local || MEDIA_BASE + clipFor(st.quality);
   useEffect(() => {
     const el = v.current;
     if (!el) return;

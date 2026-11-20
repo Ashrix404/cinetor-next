@@ -25,6 +25,7 @@ export function Settings() {
           <SRow ic="palette-outline" t="Appearance" onClick={() => nav('appearance')} />
           <SRow ic="play-circle-outline" t="Player settings" onClick={() => nav('playerset')} />
           <SRow ic="tune-variant" t="Preferences" onClick={() => nav('prefs')} />
+          <SRow ic="shield-lock-outline" t="Network" d="WARP, AntiDPI and DNS over HTTPS" onClick={() => nav('network')} />
         </Sect>
         <Sect t="Data Management">
           <SRow ic="database-outline" t="Data management" d="Backups, cache, watch progress, and sync" onClick={() => nav('data')} />

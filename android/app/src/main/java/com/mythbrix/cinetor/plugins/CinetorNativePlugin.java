@@ -33,6 +33,37 @@ public class CinetorNativePlugin extends Plugin {
     public void load() {
         downloads = Downloads.get(getContext());
         downloads.setListener(p -> notifyListeners("downloadProgress", p));
+        new Thread(() -> Net.get(getContext()).apply()).start(); // saved network mode on start
+    }
+
+    // ---- network modes (WARP / AntiDPI / DNS over HTTPS) -----------------------------------
+    private JSObject netState() {
+        Net n = Net.get(getContext());
+        JSObject r = new JSObject();
+        r.put("warp", n.warp());
+        r.put("antiDpi", n.dpi());
+        r.put("antiDpiArgs", n.dpiArgs());
+        r.put("doh", n.doh());
+        r.put("dohUrl", n.dohCustom());
+        r.put("warpRunning", n.warpRunning());
+        r.put("antiDpiRunning", n.dpiRunning());
+        r.put("error", n.error());
+        return r;
+    }
+
+    @PluginMethod
+    public void netGet(PluginCall call) {
+        call.resolve(netState());
+    }
+
+    @PluginMethod
+    public void netSet(PluginCall call) {
+        Net n = Net.get(getContext());
+        n.save(call.getBoolean("warp"), call.getBoolean("antiDpi"), call.getString("antiDpiArgs"), call.getString("doh"), call.getString("dohUrl"));
+        new Thread(() -> {
+            n.apply();
+            call.resolve(netState());
+        }).start();
     }
 
     // ---- brightness / volume -------------------------------------------------------------
@@ -213,9 +244,10 @@ public class CinetorNativePlugin extends Plugin {
             byte[] bytes = android.util.Base64.decode(call.getString("base64", ""), android.util.Base64.DEFAULT);
             File tmp = new File(getContext().getCacheDir(), "save-" + System.nanoTime());
             IO.write(tmp, bytes);
-            String path = FileSink.publish(getContext(), tmp, call.getString("relPath", "Download/Cinetor/file.bin"), call.getString("mime", "application/octet-stream"), call.getString("treeUri"));
+            String[] pub = FileSink.publish(getContext(), tmp, call.getString("relPath", "Download/Cinetor/file.bin"), call.getString("mime", "application/octet-stream"), call.getString("treeUri"));
             JSObject r = new JSObject();
-            r.put("path", path);
+            r.put("path", pub[0]);
+            r.put("uri", pub[1]);
             call.resolve(r);
         } catch (Exception e) {
             call.reject("save failed: " + e.getMessage());
