@@ -115,3 +115,35 @@ progress, pop-ups, top navigations, block screens and guard messages.
 * `shouldInterceptRequest` header injection for `<video>` range requests (worked for the old hakunaymatata rule
   only by assumption; no device test yet).
 * Old Android TV WebViews (Chrome 61) without `DOCUMENT_START_SCRIPT`: only the native UA fix applies.
+
+## 6. Downloads (real availability)
+
+* `core/dl-options.ts` (unit tested): the resolver's direct files are merged per quality rung
+  (2160/1080/720/480/360, nearest) and audio language (source name / file name: Original, Dual audio,
+  Hindi, Bangla, Tamil, Telugu, English, Korean, Japanese, Spanish), with the size the source reports
+  (`~` when unknown) and every file that provides the option, best first.
+* `core/dl-avail.ts`: the sheet (mobile `dl/sheet.tsx`, desktop `overlays.tsx`) resolves the first selected
+  episode once and shows "Checking what can be downloaded…", the real choices, "No downloadable file was
+  found" or "Couldn't check" + Retry. The Download button is disabled when nothing is downloadable.
+* `core/downloads/index.ts`: each episode is resolved at download time (links expire), the chosen
+  quality/audio first, then the same quality in another audio, then the nearest quality; when the engine
+  reports an error the next file starts automatically. Files whose CDN wants a Referer are fetched through
+  the gateway proxy (Range supported) because neither engine sends per-source headers.
+* Not offered yet: HLS-only titles (both engines write one progressive file with Range requests; an HLS
+  segment downloader + mux is future work), embed pages (no file to download), torrents.
+* Today the gateway returns **no direct file** for any title (section 2), so the sheet honestly says
+  nothing is downloadable until a direct source exists.
+
+## 7. Evaluated, not done in this PR
+
+* **Native Media3/ExoPlayer plugin.** It would give per-request headers, MKV/HEVC/DASH and better codecs
+  in the APK (what v2 does). But it draws a native view outside the WebView, so the prototype player UI
+  (controls, gestures, sheets, subtitles overlay) would have to be rebuilt natively or overlaid, and the
+  inline/PiP/fullscreen moves of the shared `<video>` would not work. With zero direct files coming from the
+  gateway today, nothing would play through it yet. Recommended next step once a direct source exists:
+  a fullscreen-only native player activity used for formats the WebView cannot decode (MKV, HEVC 10-bit, DASH).
+* **Gateway providers** (`~/cinetor-gateway`, deployed by the lead). Every keyless MovieBox upstream tried
+  on 2026-11-20 is dead or token-gated (section 2); the vega-style providers in
+  `COMBINED_DEEP_API_SCRAPE.md` need MovieBox device signatures / VIP flags, Cloudflare clearance cookies or
+  per-app keys (kisskh `kkey`). Forging those is access-control circumvention and was not done. No gateway
+  file was changed (a backup was taken), so the current gateway keeps working with this app.

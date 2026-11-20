@@ -141,6 +141,15 @@
 - Pure logic `src/core/player-gesture.ts` + `tests/core/player-gesture.test.ts`.
 - **UNVERIFIED (device):** gesture feel / pointer capture inside the APK WebView and iOS Safari; embed iframes with the bar on top.
 
+### U04 v2 player architecture — 2026-11-21 (Claude Code, PR #26, branch feat/v2-player-architecture)
+- v2 studied (it is Kotlin/Media3 + SvelteKit/shaka, not Expo): direct MovieBox files with headers from the signed antiblock gateway, ranked + LinkHealth, proxy for browsers. Details + file references: `docs/12-player-architecture.md`.
+- **"In-App Browser Detected / Open in External Browser"** = vidsrc.su's own check (`; wv)`, `Version/x.y`, brand "Android WebView"). APK fix: clean UA, `WebSettingsCompat.setUserAgentMetadata`, `WebViewCompat.addDocumentStartJavaScript` embed guard (`res/raw/embed_shim.js`: pop-ups get a dummy window, `_blank` links blocked, ready/playing/blocked messages). Verified APIs in androidx.webkit 1.14.0 api file (android.googlesource.com `webkit/webkit/api/1.14.0-beta01.txt`).
+- Shared `core/embed-session.ts` (mobile, desktop, TV): one loader, no switching away from a working-but-slow player, blocked → next, all tried → one error. `core/sources.ts` + `core/direct-play.ts`: ranked direct files, header rules (APK, `CinetorNative.setMediaHeaders` → `MediaHeaders`) or proxy (browser).
+- **User request:** no player/server switch text or UI anywhere (removed server pill, sheet, buttons, menu, strings; `pl.servers/srv/playServer/nextServer` renamed to `pl.embeds/alt`, internal only). Every embed host kept (dead ones last).
+- Downloads: real qualities/audio/sizes from resolved files (`core/dl-options.ts`, `core/dl-avail.ts`), automatic file fallback.
+- **UNVERIFIED (device):** guard + UA metadata on real WebView versions; header injection for `<video>` range requests; old TV WebViews without DOCUMENT_START_SCRIPT; downloads (no direct file exists from the gateway today).
+- **Needs the user:** antiblock gateway signing secret or a server-side MovieBox provider for direct files.
+
 ## Releases
 
 | Version | Date | Notes |
