@@ -29,6 +29,8 @@ Dependencies for media playback, edge streaming gateway integration, network mod
 | `@capacitor/screen-orientation` | 8.0.2 | landscape lock in the fullscreen player |
 | `@capacitor/share` | 8.0.3 | share and "send to another app" fallback |
 
+Streaming runtime (user authorised 2026-11-20): `hls.js` **1.7.4** (npm, Apache-2.0), NOT bundled. `src/core/playback.ts` loads `https://cdn.jsdelivr.net/npm/hls.js@1.7.4/dist/hls.light.min.js` (117 KB gz, sha384 SRI pinned to the npm file) only when a browser cannot play HLS natively or a stream needs the gateway proxy, so the size budgets hold. CI-only diagnostic: `playwright` 1.65.1 installed with `--no-save` inside `stream-probe.yml`.
+
 Everything else native (brightness, volume, download engine, APK install, external app chooser, storage folder picker) is in our own small Java plugin `CinetorNative` (`docs/07-native-plugin.md`). That means no unverified third-party plugins.
 
 Android native libraries (Google Maven, verified): `androidx.documentfile:documentfile:1.1.0` (SAF folder writing), `androidx.webkit:webkit:1.14.0` (ProxyController for the network modes; added with the user's OK 2026-11-20).
