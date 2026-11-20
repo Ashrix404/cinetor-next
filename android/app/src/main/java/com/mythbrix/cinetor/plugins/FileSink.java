@@ -59,7 +59,7 @@ final class FileSink {
         if (parent != null && !parent.exists() && !parent.mkdirs()) throw new Exception("cannot create folder");
         copy(src, new java.io.FileOutputStream(out));
         src.delete();
-        return out.getAbsolutePath();
+        return new String[] { out.getAbsolutePath(), Uri.fromFile(out).toString() };
     }
 
     private static void copy(File src, OutputStream out) throws Exception {
