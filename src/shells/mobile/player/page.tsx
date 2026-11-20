@@ -8,6 +8,7 @@ import { useStore } from '../ui/hooks';
 import { Vcore } from './controls';
 import { PlayerSheet } from './sheets';
 import { createGestures, flashGest } from './gestures';
+import { controlsHidden } from '../../../core/player-gesture';
 import { level, readLevels, resetBrightness, setBrightness, setVolume } from './media-ctl';
 
 async function enterFs() {
@@ -76,9 +77,12 @@ export function PlayerPage() {
       },
     }),
   ).current;
-  if (!pl.get().active) return null;
+  const s = useStore(pl);
+  if (!s.active) return null;
+  const embed = !!s.embedUrl;
+  // Embed servers get the touches themselves (touch-action auto, no tap handler); the bar never hides.
   return (
-    <div class={'plbox' + (c.hidden ? ' ctlhide' : '')} style="position:absolute;inset:0;background:#000;touch-action:none" onClick={(e) => !gs.suppressed() && onPlayerTap(e)} onPointerDown={gs.down} onPointerMove={gs.move} onPointerUp={gs.up} onPointerCancel={gs.up}>
+    <div class={'plbox' + (controlsHidden(c.hidden, embed) ? ' ctlhide' : '')} style={`touch-action:${embed ? 'auto' : 'none'}`} onClick={embed ? undefined : (e) => !gs.suppressed() && onPlayerTap(e)} onPointerDown={gs.down} onPointerMove={gs.move} onPointerUp={gs.up} onPointerCancel={gs.cancel} onContextMenu={gs.menu}>
       <Vcore land onFs={() => {}} />
       {isIOS() && !isNative() && portrait && <div class="rotate"><div><I n="phone-rotate-landscape" /><div>Rotate your phone</div></div></div>}
       <PlayerSheet land />
