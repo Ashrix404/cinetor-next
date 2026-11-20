@@ -41,8 +41,8 @@
 | T33 native-polish | done 2026-11-20 | PR #16, #17 | green | Java plugin compiles; device test pending |
 | T34 release-workflow | done 2026-11-20 | PR #18 | green | release.yml |
 | T35 pwa | done 2026-11-20 | PR #18 | green | PWA |
-| T36 first-release | todo | | | First release |
-| T37 tmdb-proxy | todo | | | (optional) TMDB proxy |
+| T36 first-release | in_progress | tag v0.1.0 | release run 44722456728 green | v0.1.0 published; device QA + v0.1.1 update test need the user |
+| T37 tmdb-proxy | skipped | — | — | optional, needs the user's OK |
 
 ## Open questions
 
@@ -117,3 +117,8 @@
 
 | Version | Date | Notes |
 |---|---|---|
+
+| Version | Date | Run | Notes |
+|---|---|---|---|
+| v0.1.0 | 2026-11-20 | release 44722456728 | 5 phone + 5 TV signed APKs (codes 1000–1004), latest.json, site + PWA on https://ashrix404.github.io/cinetor-releases/ |
+
