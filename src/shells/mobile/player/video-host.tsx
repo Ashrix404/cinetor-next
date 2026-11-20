@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { useStore } from '../ui/hooks';
-import { getVideo, nextServer, pl } from './store';
+import { embedLoaded, getVideo, nextServer, pl } from './store';
 
 /** Mounts the shared <video> element or web stream iframe inside this box (prototype `.vid`). */
 export function VideoHost({ fit, hue }: { fit: string; hue: number }) {
@@ -23,14 +23,14 @@ export function VideoHost({ fit, hue }: { fit: string; hue: number }) {
 
   if (s.embedUrl) {
     return (
-      <div class={'vid fit-' + fit} style={`--h:${hue};position:relative;background:#05060a;overflow:hidden;`}>
+      <div class={'vid fit-' + fit} style={`--h:${hue};background:#05060a;overflow:hidden;`}>
         <iframe
           key={s.embedUrl}
           src={s.embedUrl}
           style="width:100%;height:100%;border:none;position:absolute;inset:0;"
           allowFullScreen
           allow="autoplay *; encrypted-media *; fullscreen *; picture-in-picture *"
-          onLoad={() => setIframeLoaded(true)}
+          onLoad={() => (setIframeLoaded(true), embedLoaded())}
         />
         {(!iframeLoaded || s.loading) && (
           <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#05060a;z-index:3;gap:12px;">
@@ -44,7 +44,7 @@ export function VideoHost({ fit, hue }: { fit: string; hue: number }) {
   }
 
   return (
-    <div ref={ref} class={'vid fit-' + fit} style={`--h:${hue};position:relative;`}>
+    <div ref={ref} class={'vid fit-' + fit} style={`--h:${hue};`}>
       {s.loading && (
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(5,6,10,0.85);z-index:3;gap:12px;pointer-events:none;">
           <div style="width:48px;height:48px;border:3.5px solid rgba(255,255,255,0.15);border-top-color:#38bdf8;border-right-color:#38bdf8;border-radius:50%;animation:spin 0.8s linear infinite;box-shadow:0 0 20px rgba(56,189,248,0.35);" />

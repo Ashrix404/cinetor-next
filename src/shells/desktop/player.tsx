@@ -1,5 +1,7 @@
 // Desktop player overlay (prototype web Player + mobile landscape control set, docs/05-player.md).
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { pickChannel } from '../../core/live';
+import { cancelPlay, playUrl } from '../../core/playback';
 import { useStore } from '../mobile/ui/hooks';
 import { MEDIA_BASE } from '../../core/config';
 import { createStore } from '../../core/store';
@@ -47,7 +49,7 @@ export function Player() {
   };
   const close = () => {
     const el = v.current;
-    if (el) (el.pause(), el.removeAttribute('src'), el.load());
+    if (el) cancelPlay(el); // stops hls.js too and releases the decoder
     dpl.set({ on: false, pip: false, embedUrl: null, loading: false });
   };
   const bump = () => {
@@ -60,10 +62,13 @@ export function Player() {
     if (!el) return;
 
     if (s.live) {
-      const channel = LIVE_ALL.find((c) => c[1] === s.live || c[0] === s.live);
-      const url = channel?.[5] || 'https://tsports.live/live.m3u8';
-      el.src = url;
-      el.play().catch(() => {});
+      // desktop Chrome/Firefox have no native HLS: playUrl picks native, hls.js or hls.js via the gateway proxy
+      const channel = pickChannel(s.live, LIVE_ALL);
+      dpl.set({ loading: true });
+      playUrl(el, channel?.[5] || '', { nativeOnly: !!channel?.[6] }).then(
+        () => dpl.set({ loading: false }),
+        (e: Error) => e.message !== 'cancelled' && (dpl.set({ loading: false }), toast('This channel is offline right now. Try another channel.'))
+      );
       return;
     }
 

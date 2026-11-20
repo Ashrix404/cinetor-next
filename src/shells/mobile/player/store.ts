@@ -6,7 +6,9 @@ import type { Quality } from '../../../core/series-settings';
 import { cur, library, series } from '../state';
 import { isNative } from '../../../core/platform';
 import { fetchStream } from '../../../core/stream-resolver';
-import { LIVE_ALL } from '../../../core/live';
+import { pickChannel } from '../../../core/live';
+import { cancelPlay, playUrl } from '../../../core/playback';
+import { nextUntried, reachable } from '../../../core/embeds';
 
 export interface Pl {
   active: boolean;
@@ -80,14 +82,15 @@ export function getVideo(): HTMLVideoElement {
     if (s.st.mediaType === 'tv') next();
     else patch({ playing: false });
   });
-  v.addEventListener('playing', () => pl.set({ loading: false, err: null }));
+  v.addEventListener('playing', () => (pl.set({ loading: false, err: null }), patch({ playing: true })));
+  v.addEventListener('pause', () => pl.get().st.playing && !starting && patch({ playing: false }));
   v.addEventListener('waiting', () => pl.get().active && !pl.get().embedUrl && pl.set({ loading: true }));
-  v.addEventListener('canplay', () => pl.set({ loading: false }));
+  v.addEventListener('canplay', () => !starting && pl.set({ loading: false }));
   v.addEventListener('error', () => {
-    if (!v.getAttribute('src')) return; // src was cleared on purpose
+    if (starting || !v.getAttribute('src')) return; // start-up errors are handled by playUrl; '' = cleared on purpose
     const s = pl.get();
-    if (s.live || s.local) return pl.set({ loading: false, err: 'This stream could not be played' });
-    if (s.servers.length) return playServer(0); // direct file failed: fall back to the embed servers
+    if (s.live || s.local) return pl.set({ loading: false, err: s.live ? 'This channel stopped. Tap Retry.' : 'This file could not be played' });
+    if (s.servers.length) return tryServer(0); // direct file failed mid-way: fall back to the embed servers
     pl.set({ loading: false, err: 'This stream could not be played' });
   });
   video = v;
@@ -132,6 +135,28 @@ function load(q: Quality, at = 0, play = true) {
 }
 
 let currentResolveKey = '';
+/** true while playUrl is trying engines (its own timeouts decide; the <video> error listener stays quiet) */
+let starting = false;
+/** Start a direct media URL with engine fallback + timeout; `onFail` runs when nothing produced frames. */
+function startDirect(url: string, at: number, o: { nativeOnly?: boolean }, onFail: (why: string) => void) {
+  const v = getVideo();
+  starting = true;
+  v.playbackRate = pl.get().st.speed;
+  playUrl(v, url, { at, nativeOnly: o.nativeOnly, timeoutMs: 15000 }).then(
+    () => {
+      starting = false;
+      v.playbackRate = pl.get().st.speed;
+      pl.set({ loading: false, err: null });
+      if (v.paused) patch({ playing: false }); // autoplay blocked: show Play, the user taps it
+      else keepAwake(true);
+    },
+    (e: Error) => {
+      if (e.message === 'cancelled') return;
+      starting = false;
+      onFail(e.message);
+    }
+  );
+}
 
 /** Prototype `startAt`: start a title/episode with the series memory applied. */
 export function startAt(t: Title, season: number, episode: number, o: { seasons?: Seasons; hue?: number; local?: string } = {}) {
@@ -147,7 +172,9 @@ export function startAt(t: Title, season: number, episode: number, o: { seasons?
   const resume = library.progress(t.id, season, episode);
   const atPos = resume > 0.02 && resume < 0.97 ? resume * 120 : 0;
   const v0 = getVideo();
-  if (!o.local) { v0.pause(); v0.removeAttribute('src'); v0.load(); }
+  cancelPlay(v0); // also drops an hls.js instance left from a live channel
+  clearTimeout(srvTimer);
+  srvGen++; // a pending failover of the previous title must not touch this one
 
   if (o.local) {
     load(st.quality, atPos);
@@ -159,33 +186,62 @@ export function startAt(t: Title, season: number, episode: number, o: { seasons?
   void fetchStream(t.id, t.title, t.mediaType, season, episode).then((res) => {
     if (currentResolveKey !== key) return;
     if (!res) return pl.set({ loading: false, err: 'Could not load this title. Check your connection.' });
-    const servers = res.embeds.map((url, i) => ({ url, name: res.sources.find((x) => x.url === url)?.name || 'Server ' + (i + 1) }));
-    pl.set({ servers, srv: 0 });
+    tried = new Set();
+    pl.set({ servers: res.servers, srv: 0 });
     if (res.url) {
-      // a real media file: play it in the shared <video>; an error falls back to the embed servers
-      const v = getVideo();
-      v.src = res.url;
-      const seek = () => { try { v.currentTime = atPos; } catch {} };
-      if (v.readyState >= 1) seek();
-      else v.addEventListener('loadedmetadata', seek, { once: true });
-      v.playbackRate = pl.get().st.speed;
-      v.play().then(() => keepAwake(true), () => { if (servers.length) playServer(0); else pl.set({ loading: false, err: 'Tap play to start' }); });
+      // a real media file: play it in the shared <video>; if no engine gets frames, use the embed servers
+      startDirect(res.url, atPos, {}, () => {
+        if (currentResolveKey !== key) return;
+        if (res.servers.length) tryServer(0);
+        else pl.set({ loading: false, err: 'This stream could not be played' });
+      });
       return;
     }
-    playServer(0);
+    tryServer(0);
   });
 }
 
-/** Switch to embed server `i` (iframe). */
+/** Servers already tried for the current title (auto failover never loops forever). */
+let tried = new Set<number>();
+let srvTimer: ReturnType<typeof setTimeout> | undefined;
+let srvGen = 0;
+/** An embed page that has not fired `load` after this long is treated as dead and the next one is tried. */
+export const EMBED_LOAD_MS = 15000;
+
+/** Switch to embed server `i` (iframe). Unreachable hosts (DNS/TLS/connection failure) are skipped
+ * automatically; a page that does not load in EMBED_LOAD_MS moves on to the next untried server. */
 export function playServer(i: number) {
-  const s = pl.get(), sv = s.servers[i];
-  if (!sv) return pl.set({ loading: false, err: 'No working server for this title' });
-  const v = getVideo();
-  v.pause();
-  v.removeAttribute('src');
-  pl.set({ srv: i, embedUrl: sv.url, loading: false, err: null });
+  tried = new Set();
+  tryServer(i);
 }
-/** Next server in the list (wraps). */
+function tryServer(i: number) {
+  const s = pl.get(), sv = s.servers[i];
+  if (!sv) return pl.set({ loading: false, embedUrl: null, err: 'No working server for this title' });
+  tried.add(i);
+  starting = false;
+  cancelPlay(getVideo());
+  clearTimeout(srvTimer);
+  const gen = ++srvGen;
+  pl.set({ srv: i, embedUrl: sv.url, loading: true, err: null });
+  void reachable(sv.url).then((ok) => {
+    if (gen !== srvGen || ok) return;
+    failServer(gen);
+  });
+  srvTimer = setTimeout(() => gen === srvGen && pl.get().loading && failServer(gen), EMBED_LOAD_MS);
+}
+function failServer(gen: number) {
+  if (gen !== srvGen) return;
+  const s = pl.get();
+  const n = nextUntried(s.servers.length, s.srv, tried);
+  if (n < 0) return pl.set({ loading: false, embedUrl: null, err: 'No server is reachable right now. Check your connection and tap Retry.' });
+  tryServer(n);
+}
+/** VideoHost calls this when the iframe fired `load` (the server answered). */
+export function embedLoaded() {
+  clearTimeout(srvTimer);
+  if (pl.get().embedUrl) pl.set({ loading: false });
+}
+/** Next server in the list (wraps). Manual choice: resets the auto-failover memory. */
 export const nextServer = () => playServer((pl.get().srv + 1) % Math.max(1, pl.get().servers.length));
 /** Start the current title again (after an error). */
 export function retryPlay() {
@@ -194,15 +250,17 @@ export function retryPlay() {
   if (s.title) startAt(s.title, s.st.season, s.st.episode, { hue: s.hue });
 }
 
-/** Live channel / match: plays the real live HLS stream. */
+/** Live channel / match: plays the real live HLS stream (native HLS, hls.js, or hls.js via the gateway proxy). */
 export function startLive(label: string, hue: number, streamUrl?: string) {
-  const channel = LIVE_ALL.find((c) => c[1] === label || c[0] === label);
-  const url = streamUrl || channel?.[5] || 'https://tsports.live/live.m3u8';
+  const channel = pickChannel(label);
+  const url = streamUrl || channel?.[5] || '';
   const st = initialState({ titleId: -1, title: label, mediaType: 'live', quality: 720, mode: 'fullscreen' });
+  clearTimeout(srvTimer);
+  srvGen++;
+  currentResolveKey = '';
   pl.set({ active: true, pip: false, live: true, title: null, label, hue, st, local: null, embedUrl: null, servers: [], srv: 0, err: null, loading: true });
-  const v = getVideo();
-  v.src = url;
-  v.play().then(() => keepAwake(true), () => patch({ playing: false }));
+  if (!url) return pl.set({ loading: false, err: 'No channel to play' });
+  startDirect(url, 0, { nativeOnly: !!channel && channel[5] === url && !!channel[6] }, () => pl.set({ loading: false, err: 'This channel is offline right now. Try another channel.' }));
 }
 
 export function togglePlay() {
@@ -260,9 +318,11 @@ export const prev = () => goEp(prevR({ ...pl.get().st, pos: ptime.get().pos }, p
 
 export function stop() {
   const v = getVideo();
-  v.pause();
-  v.removeAttribute('src');
-  v.load(); // release the decoder
+  starting = false;
+  currentResolveKey = '';
+  clearTimeout(srvTimer);
+  srvGen++;
+  cancelPlay(v); // also releases the decoder
   pl.set({ active: false, pip: false, embedUrl: null, servers: [], err: null, loading: false });
   keepAwake(false);
 }

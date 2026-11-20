@@ -8,7 +8,9 @@ import { esc } from './views';
 import { library, series } from './state';
 import { focus } from './spatial-nav';
 import { fetchStream } from '../../core/stream-resolver';
-import { LIVE_ALL } from '../../core/live';
+import { pickChannel } from '../../core/live';
+import { cancelPlay, playUrl } from '../../core/playback';
+import { nextUntried, reachable, type Server } from '../../core/embeds';
 
 interface P { t: Title | null; label: string; live: boolean; s: number; e: number; q: Quality; sub: string; audio: string; menu: string | null; seasons: Seasons }
 export let P: P | null = null;
@@ -52,41 +54,60 @@ function load(resume: boolean) {
     currentTvResolveKey = key;
     void fetchStream(P.t.id, P.t.title, P.t.mediaType, P.s, P.e).then((res) => {
       if (currentTvResolveKey !== key) return;
-      if (res?.url) {
-        if (tvIframe) { tvIframe.remove(); tvIframe = null; }
-        v.src = res.url;
-        v.currentTime = at;
-        void v.play().catch(() => {});
-      } else if (res?.embedUrl) {
-        v.pause();
-        v.removeAttribute('src');
-        v.remove();
-        if (!tvIframe) {
-          tvIframe = document.createElement('iframe');
-          tvIframe.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:none;z-index:0;';
-          tvIframe.setAttribute('allow', 'autoplay; encrypted-media; fullscreen');
-          root?.insertBefore(tvIframe, root.firstChild);
-        }
-        tvIframe.src = res.embedUrl;
-      }
+      if (!res) return toastFn('Could not load this title. Check your connection.');
+      const embeds = () => (res.servers.length ? tvServer(res.servers, 0, new Set()) : toastFn('No working server for this title'));
+      if (res.url) {
+        dropIframe();
+        playUrl(v, res.url, { at }).catch((e: Error) => e.message !== 'cancelled' && currentTvResolveKey === key && embeds());
+      } else embeds();
     });
   } else {
-    if (tvIframe) { tvIframe.remove(); tvIframe = null; }
-    const channel = LIVE_ALL.find((c) => c[1] === P?.label || c[0] === P?.label);
-    const url = channel?.[5] || 'https://tsports.live/live.m3u8';
-    v.src = url;
-    void v.play().catch(() => {});
+    dropIframe();
+    currentTvResolveKey = '';
+    const channel = pickChannel(P?.label || '');
+    playUrl(v, channel?.[5] || '', { nativeOnly: !!channel?.[6] }).catch((e: Error) => e.message !== 'cancelled' && toastFn('This channel is offline right now. Try another channel.'));
   }
 }
-export function close() {
-  const v = el();
-  v.pause();
-  v.removeAttribute('src');
-  v.load(); // release the decoder
+let srvTimer: ReturnType<typeof setTimeout> | undefined;
+let srvGen = 0;
+function dropIframe() {
+  clearTimeout(srvTimer);
+  srvGen++;
   if (tvIframe) {
     tvIframe.remove();
     tvIframe = null;
   }
+}
+/** Embed server `i` in an iframe; an unreachable host or a page that does not load in 15 s moves on. */
+function tvServer(list: Server[], i: number, tried: Set<number>) {
+  const v = el(), key = currentTvResolveKey, gen = ++srvGen;
+  tried.add(i);
+  cancelPlay(v);
+  v.remove();
+  if (!tvIframe) {
+    tvIframe = document.createElement('iframe');
+    tvIframe.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:none;z-index:0;';
+    tvIframe.setAttribute('allow', 'autoplay; encrypted-media; fullscreen');
+    tvIframe.setAttribute('allowfullscreen', '');
+    root?.insertBefore(tvIframe, root.firstChild);
+  }
+  const fail = () => {
+    if (key !== currentTvResolveKey || gen !== srvGen) return;
+    const n = nextUntried(list.length, i, tried);
+    if (n < 0) return toastFn('No server is reachable right now');
+    tvServer(list, n, tried);
+  };
+  clearTimeout(srvTimer);
+  srvTimer = setTimeout(fail, 15000);
+  tvIframe.onload = () => clearTimeout(srvTimer);
+  tvIframe.src = list[i].url;
+  void reachable(list[i].url).then((ok) => ok || (clearTimeout(srvTimer), fail()));
+}
+export function close() {
+  const v = el();
+  currentTvResolveKey = '';
+  cancelPlay(v); // stops hls.js and releases the decoder
+  dropIframe();
   root?.remove();
   root = null;
   P = null;
@@ -143,13 +164,15 @@ export function draw() {
     document.getElementById('tv')!.appendChild(root);
   }
   const sr = !p.live && p.t?.mediaType === 'tv', playing = !el().paused;
-  root.innerHTML = `<div class="ui"><div class="ptop"><div class="pb" data-f data-do="pback">${I('arrow-left')}</div><div class="g">${esc(p.label)}${p.live ? '' : sr ? ` <small style="color:var(--dim);font-size:16px"> S${p.s} · E${p.e}</small>` : ''}</div>${p.live ? '' : '<div class="pb" data-f data-do="pmenu" data-m="q">HD</div>'}</div>
+  // keep the <video>/<iframe> node: re-attaching it would pause the video or reload the embed page
+  for (const n of Array.from(root.children)) if (n !== tvIframe && n !== video) n.remove();
+  root.insertAdjacentHTML('beforeend', `<div class="ui"><div class="ptop"><div class="pb" data-f data-do="pback">${I('arrow-left')}</div><div class="g">${esc(p.label)}${p.live ? '' : sr ? ` <small style="color:var(--dim);font-size:16px"> S${p.s} · E${p.e}</small>` : ''}</div>${p.live ? '' : '<div class="pb" data-f data-do="pmenu" data-m="q">HD</div>'}</div>
  <div class="pmid"><div class="pb" data-f data-do="seek" data-d="-10">${I('rewind-10')}</div><div class="pb big" data-f data-do="ptoggle">${I(playing ? 'pause' : 'play')}</div><div class="pb" data-f data-do="seek" data-d="10">${I('fast-forward-10')}</div></div>
  <div class="pbot"><div class="row2"><div class="pb" data-f data-do="pmenu" data-m="sub">${I('subtitles-outline')}</div><div class="pb" data-f data-do="pmenu" data-m="audio">${I('waveform')}</div>${sr ? `<div class="pb" data-f data-do="pmenu" data-m="eps">${I('playlist-play')}</div><div class="pb" data-f data-do="pprev">${I('skip-previous')}</div><div class="pb" data-f data-do="pnext">${I('skip-next')}</div>` : ''}</div>
- <div class="seek" data-f data-do="seekbar"><b id="pbar"></b></div><div class="tm"><span id="pt">${p.live ? 'LIVE' : ''}</span><span id="pd"></span></div></div></div><div class="psub" id="psub"></div>${p.menu ? menuHtml() : ''}`;
+ <div class="seek" data-f data-do="seekbar"><b id="pbar"></b></div><div class="tm"><span id="pt">${p.live ? 'LIVE' : ''}</span><span id="pd"></span></div></div></div><div class="psub" id="psub"></div>${p.menu ? menuHtml() : ''}`);
   if (tvIframe) {
     if (!root.contains(tvIframe)) root.insertBefore(tvIframe, root.firstChild);
-  } else {
+  } else if (!root.contains(el())) {
     root.insertBefore(el(), root.firstChild);
   }
   focus(root.querySelector<HTMLElement>(p.menu ? '.menu [data-f]' : '[data-do="ptoggle"]'));
