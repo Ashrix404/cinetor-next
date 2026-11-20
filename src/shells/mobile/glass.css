@@ -1,0 +1,20 @@
+/* Liquid glass (html.lg). Blur only on nav, sheet, dialog and drawer; static glow (no animation). */
+/* ===== Liquid glass theme (html.lg): stronger, GPU-friendly. Blur only on a few fixed surfaces. ===== */
+html.lg .scr{isolation:isolate;background:#05060a}
+html.lg .scr::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(38% 28% at 18% 14%,rgba(110,140,255,.6),transparent 70%),radial-gradient(34% 28% at 86% 30%,rgba(255,110,190,.45),transparent 70%),radial-gradient(40% 32% at 34% 88%,rgba(50,230,200,.42),transparent 70%),radial-gradient(30% 24% at 82% 86%,rgba(255,190,90,.34),transparent 70%);}
+
+html.lg #app{background:#05060a}
+html.lg .nav,html.lg .sheet,html.lg .dialog,html.lg .dwr{-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+html.lg .nav,html.lg .sheet,html.lg .dialog,html.lg .dwr,html.lg .bbar,html.lg .mini,html.lg .menu-top,html.lg .card,html.lg .ibtn.glass,html.lg .bbar .ibtn,html.lg .ibtn.tonal,html.lg .hmy,html.lg .pk{background:linear-gradient(135deg,rgba(255,255,255,.22),rgba(255,255,255,.06) 55%,rgba(255,255,255,.12))!important;border:1px solid rgba(255,255,255,.3);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(255,255,255,.08),0 10px 22px rgba(0,0,0,.3)}
+html.lg .dscrim{background:rgba(0,0,0,.35)!important;border:0;box-shadow:none}
+html.lg .srow,html.lg .chip,html.lg .opts span,html.lg .field,html.lg .sts span,html.lg .mc,html.lg .ep,html.lg .banner,html.lg .tile,html.lg .pcard,html.lg .seg2,html.lg .seg,html.lg .spc .ring,html.lg .dsearch,html.lg .hchips span{background:linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.05))!important;border:1px solid rgba(255,255,255,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 -1px 0 rgba(255,255,255,.05)}
+html.lg .card .srow,html.lg .card .pcard{background:transparent!important;border:0;box-shadow:none;border-radius:0}
+html.lg .nav{margin:0 10px 10px;border-radius:32px}
+html.lg .nav .on i{background:linear-gradient(135deg,rgba(255,255,255,.4),rgba(255,255,255,.12));box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
+html.lg .dwr{border-radius:0 32px 32px 0}
+html.lg .hc{border-color:rgba(255,255,255,.26);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 16px 36px rgba(0,0,0,.5)}
+html.lg .btn:not(.text):not(.tonal):not(.out){background:linear-gradient(180deg,#fff,rgba(255,255,255,.82));box-shadow:inset 0 1px 0 #fff,0 10px 24px rgba(0,0,0,.35)}
+html.lg .sw{background:rgba(255,255,255,.14)}html.lg .sw.on{background:#fff}
+
+@media (prefers-reduced-motion:reduce){html.lg .scr::before{}}
+
