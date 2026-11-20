@@ -5,7 +5,7 @@ Names used everywhere in these docs (change them here only, then search-replace 
 | Name | Value |
 |---|---|
 | `OWNER` | `Ashrix404` |
-| `SOURCE_REPO` | `cinetor-next` (private, all code) |
+| `SOURCE_REPO` | `cinetor-next` (PUBLIC, all code; public so GitHub Actions minutes are free) |
 | `RELEASE_REPO` | `cinetor-releases` (public, only APKs, website, media, `latest.json`) |
 | Phone app id | `com.mythbrix.cinetor` |
 | TV app id | `com.mythbrix.cinetor.tv` |
@@ -14,7 +14,7 @@ Names used everywhere in these docs (change them here only, then search-replace 
 
 Do NOT reuse `cinetor-v2` or `cinetor-app`.
 
-## Step 1 — Create both repos (light commands, run from `~/cinetor-next`)
+## Step 1 — Create both repos — DONE 2026-11-20 (setup by Claude)
 
 ```bash
 cd ~/cinetor-next
@@ -37,7 +37,7 @@ gh repo create Ashrix404/cinetor-releases --public --description "Cinetor builds
 gh secret set RELEASE_REPO_TOKEN --repo Ashrix404/cinetor-next   # paste token when asked
 ```
 
-## Step 3 — TMDB token
+## Step 3 — TMDB token — DONE (secret set; still rotate it in the TMDB dashboard and update the secret)
 
 Rotate the old token first (it was shared in chat). Then:
 
@@ -45,7 +45,11 @@ Rotate the old token first (it was shared in chat). Then:
 gh secret set TMDB_TOKEN --repo Ashrix404/cinetor-next   # paste the v4 read access token
 ```
 
-## Step 4 — Android signing key (generated in CI, no JDK needed locally)
+## Step 4 — Android signing key — DONE (generated locally with openssl, PKCS12)
+
+The keystore was generated on the user's PC with openssl (light command), NOT in CI, because this repo is public and workflow artifacts of public repos can be downloaded by anyone. Files: `~/cinetor-keys/` (`cinetor.p12`, `cinetor.p12.b64`, `cert.pem`, `secrets.txt`). The 4 `ANDROID_*` secrets are set. Store type is PKCS12, alias `cinetor`, store password = key password.
+
+Old instructions below are kept for reference only. NEVER generate or upload a keystore as a workflow artifact in this public repo.
 
 The key must never change. If it is lost, users cannot update in place and must uninstall.
 
@@ -65,7 +69,7 @@ gh secret set ANDROID_KEY_PASSWORD --repo Ashrix404/cinetor-next       # value f
 
 6. Back up `~/cinetor-keys` to two safe places (for example an encrypted USB stick and a password manager). Then delete the workflow run so the artifact is gone: `gh run delete <run-id> --repo Ashrix404/cinetor-next`.
 
-## Step 5 — GitHub Pages on the release repo
+## Step 5 — GitHub Pages on the release repo — DONE (gh-pages branch, https://ashrix404.github.io/cinetor-releases/)
 
 After the first `mock-media.yml` or `release.yml` run has created the `gh-pages` branch in `cinetor-releases`:
 

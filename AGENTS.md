@@ -27,12 +27,13 @@ The approved UI and behavior live in `prototype/`. That folder is the single sou
    - TMDB endpoint: check https://developer.themoviedb.org/reference and test it in CI, never invent fields.
    If the check fails, do NOT use it. Write "UNVERIFIED: <thing>" in `docs/PROGRESS.md` and ask the user.
 4. **Only use dependencies listed in `docs/02-architecture.md` §Dependencies.** Adding anything else needs the user's written OK.
-5. **Never commit secrets.** No TMDB token, keystore, password or PAT in any file. Secrets come from GitHub Actions secrets only (`docs/03-github-setup.md`).
-6. **Never invent features, screens, strings or settings** that are not in `prototype/` or `docs/01-product-spec.md`. If something is unclear, ask.
-7. **Never touch** the old repos `Ashrix404/cinetor-v2` and `Ashrix404/cinetor-app`.
-8. **One task at a time.** Do exactly the task named in the prompt from `docs/04-implementation-plan.md`. Do not start the next task.
-9. **Small commits** on a branch named `task/<id>-<slug>`. Never commit to `main` directly. Never force-push `main`.
-10. **A task is done only when CI is green** (see §3) and the task's acceptance checks are ticked in `docs/PROGRESS.md`.
+5. **The source repo is PUBLIC.** Never upload secrets, keystores or tokens as workflow artifacts or logs (public artifacts are downloadable by anyone).
+6. **Never commit secrets.** No TMDB token, keystore, password or PAT in any file. Secrets come from GitHub Actions secrets only (`docs/03-github-setup.md`).
+7. **Never invent features, screens, strings or settings** that are not in `prototype/` or `docs/01-product-spec.md`. If something is unclear, ask.
+8. **Never touch** the old repos `Ashrix404/cinetor-v2` and `Ashrix404/cinetor-app`.
+9. **One task at a time.** Do exactly the task named in the prompt from `docs/04-implementation-plan.md`. Do not start the next task.
+10. **Small commits** on a branch named `task/<id>-<slug>`. Never commit to `main` directly. Never force-push `main`.
+11. **A task is done only when CI is green** (see §3) and the task's acceptance checks are ticked in `docs/PROGRESS.md`.
 
 ## 2. How to work on a task (every time, in this order)
 

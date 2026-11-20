@@ -4,6 +4,8 @@
 
 | Task | State | Branch / PR | CI | Notes |
 |---|---|---|---|---|
+| SETUP | done 2026-11-20 | main | — | repos created; cinetor-next is PUBLIC (free Actions); cinetor-releases public + Pages on gh-pages; secrets set: TMDB_TOKEN, ANDROID_KEYSTORE_B64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD. MISSING: RELEASE_REPO_TOKEN (user must create a fine-grained PAT) |
+| T03 keystore | done | — | — | generated locally with openssl (PKCS12), not in CI |
 | T00 orientation | todo | | | |
 
 ## Open questions

@@ -33,6 +33,7 @@ signingConfigs {
         def ks = System.getenv("ANDROID_KEYSTORE_FILE")
         if (ks) {
             storeFile file(ks)
+            storeType "pkcs12"
             storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
             keyAlias System.getenv("ANDROID_KEY_ALIAS")
             keyPassword System.getenv("ANDROID_KEY_PASSWORD")
@@ -220,7 +221,7 @@ jobs:
           git push
 ```
 
-## keystore.yml
+## keystore.yml — DO NOT USE (repo is public; artifacts would leak the key). Kept only as reference.
 
 ```yaml
 name: keystore

@@ -54,7 +54,8 @@
 - [ ] The badging of the TV APKs contains `leanback-launcher` and `uses-feature-not-required: name='android.hardware.touchscreen'`.
 - [ ] `unzip -p <tv apk> assets/public/index.html | grep 'data-shell="tv"'` succeeds; the phone APK has `data-shell="mobile"`.
 
-### T03: Keystore workflow
+### T03: Keystore — DONE during setup (local openssl, secrets set). Do NOT add keystore.yml.
+<!-- original text kept for reference -->
 **Files:** `.github/workflows/keystore.yml`. The workflow_dispatch job generates `cinetor.jks` with `keytool -genkeypair -alias cinetor -keyalg RSA -keysize 4096 -validity 36500` and random 32-char passwords from `openssl rand`. It writes `secrets.txt`, base64-encodes the jks, and uploads the artifact `cinetor-keystore` with retention 1 day. It never prints secrets to the log.
 
 **Acceptance**
