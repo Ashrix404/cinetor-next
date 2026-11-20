@@ -7,7 +7,7 @@ import { baseCodeOf, fetchManifest, isMandatory, isNewer, isSnoozed, pickApk, sn
 import { I } from './ui/icons';
 import { on, toast } from './state';
 
-interface Upd { m: ReleaseManifest | null; apk: ApkInfo | null; mandatory: boolean; progress: number | null; ready: string | null; web: string | null; perm: boolean }
+interface Upd { m: ReleaseManifest | null; apk: ApkInfo | null; mandatory: boolean; progress: number | null; ready: string | null; web: string | null; perm: boolean; reload?: () => void }
 export const upd = createStore<Upd>('upd', { m: null, apk: null, mandatory: false, progress: null, ready: null, web: null, perm: false }, false);
 const snooze = createStore<{ s: { version: string; until: number } | null }>('upd-snooze', { s: null }, true);
 const flavor = (): 'phone' | 'tv' => (document.documentElement.dataset.shell === 'tv' ? 'tv' : 'phone');
@@ -92,7 +92,7 @@ export function UpdateDialog() {
   const u = upd.get();
   if (u.web)
     return (
-      <div class="toast" style="display:flex;gap:12px;align-items:center" onClick={() => location.reload()}>
+      <div class="toast" style="display:flex;gap:12px;align-items:center" onClick={() => (u.reload ? u.reload() : location.reload())}>
         <span>New version available</span><b style="color:#000">Reload</b>
       </div>
     );

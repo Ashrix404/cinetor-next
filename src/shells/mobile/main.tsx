@@ -2,7 +2,9 @@ import { render } from 'preact';
 import './app.css';
 import './glass.css';
 import { App, installBack } from './app';
-import { startUpdateChecks } from './updates';
+import { startUpdateChecks, upd } from './updates';
+import { iosInstallHint, registerSW } from '../shared/pwa';
+import { toast } from './state';
 import { wireDownloadToasts } from './dl/page';
 import { isNative } from '../../core/platform';
 
@@ -18,4 +20,6 @@ render(<App />, document.getElementById('app-root')!);
 installBack();
 void edgeToEdge();
 startUpdateChecks();
+registerSW((reload) => upd.set({ web: 'new', reload }));
+if (iosInstallHint()) setTimeout(() => toast('Install: tap Share, then Add to Home Screen'), 4000);
 wireDownloadToasts();

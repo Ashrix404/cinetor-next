@@ -16,37 +16,37 @@
 | T08 library-store | done 2026-11-20 | PR #9 | green | unit tested |
 | T09 player-model | done 2026-11-20 | PR #10 | green | unit tested |
 | T10 mock-sections | done 2026-11-20 | PR #11 | green | counts = prototype |
-| T11 mobile-frame | todo | | | App frame (mobile) |
-| T12 mobile-feed-blocks | todo | | | Feed building blocks (mobile) |
-| T13 mobile-sections | todo | | | Sections (mobile) |
-| T14 mobile-info | todo | | | Info page (mobile) |
-| T15 mobile-portrait-player | todo | | | Portrait player + PiP (mobile) |
-| T16 mobile-fullscreen-player | todo | | | Fullscreen player (mobile) |
-| T17 mobile-subtitles | todo | | | Subtitles UI (mobile) |
-| T18 mobile-downloads | todo | | | Downloads UI (mobile) |
-| T19 mobile-settings | todo | | | Settings (mobile) |
-| T20 mobile-tv-tab | todo | | | TV tab (mobile) |
-| T21 mobile-music | todo | | | Music (mobile) |
-| T22 mobile-comics | todo | | | Comics (mobile) |
-| T23 desktop-frame | todo | | | Frame (desktop) |
-| T24 desktop-pages | todo | | | Pages (desktop) |
-| T25 tv-frame | todo | | | Frame (TV) |
-| T26 tv-feeds | todo | | | Feeds (TV) |
-| T27 tv-info-player | todo | | | Info + Player (TV) |
-| T28 tv-other | todo | | | Other (TV) |
-| T29 tv-performance | todo | | | Performance (TV) |
-| T30 native-plugin | todo | | | CinetorNative plugin (part 1) |
-| T31 download-engine | todo | | | Download engine |
-| T32 updater | todo | | | Updater |
-| T33 native-polish | todo | | | Native polish |
-| T34 release-workflow | todo | | | release.yml |
-| T35 pwa | todo | | | PWA |
+| T11 mobile-frame | done 2026-11-20 | PR #12 | green | frame, splash, nav, drawer, feeds, carousel |
+| T12 mobile-feed-blocks | done 2026-11-20 | PR #12 | green | frame, splash, nav, drawer, feeds, carousel |
+| T13 mobile-sections | done 2026-11-20 | PR #13 | green | mobile screens, smoke-tested |
+| T14 mobile-info | done 2026-11-20 | PR #13 | green | mobile screens, smoke-tested |
+| T15 mobile-portrait-player | done 2026-11-20 | PR #13 | green | mobile screens, smoke-tested |
+| T16 mobile-fullscreen-player | done 2026-11-20 | PR #13 | green | mobile screens, smoke-tested |
+| T17 mobile-subtitles | done 2026-11-20 | PR #13 | green | mobile screens, smoke-tested |
+| T18 mobile-downloads | done 2026-11-20 | PR #13 | green | mobile screens, smoke-tested |
+| T19 mobile-settings | done 2026-11-20 | PR #13 | green | mobile screens, smoke-tested |
+| T20 mobile-tv-tab | done 2026-11-20 | PR #13 | green | mobile screens, smoke-tested |
+| T21 mobile-music | done 2026-11-20 | PR #13 | green | mobile screens, smoke-tested |
+| T22 mobile-comics | done 2026-11-20 | PR #13 | green | mobile screens, smoke-tested |
+| T23 desktop-frame | done 2026-11-20 | PR #14 | green | desktop shell |
+| T24 desktop-pages | done 2026-11-20 | PR #14 | green | desktop shell |
+| T25 tv-frame | done 2026-11-20 | PR #15 | green | TV shell, 28 KB JS |
+| T26 tv-feeds | done 2026-11-20 | PR #15 | green | TV shell, 28 KB JS |
+| T27 tv-info-player | done 2026-11-20 | PR #15 | green | TV shell, 28 KB JS |
+| T28 tv-other | done 2026-11-20 | PR #15 | green | TV shell, 28 KB JS |
+| T29 tv-performance | done 2026-11-20 | PR #15 | green | TV shell, 28 KB JS |
+| T30 native-plugin | done 2026-11-20 | PR #16, #17 | green | Java plugin compiles; device test pending |
+| T31 download-engine | done 2026-11-20 | PR #16, #17 | green | Java plugin compiles; device test pending |
+| T32 updater | done 2026-11-20 | PR #16, #17 | green | Java plugin compiles; device test pending |
+| T33 native-polish | done 2026-11-20 | PR #16, #17 | green | Java plugin compiles; device test pending |
+| T34 release-workflow | done 2026-11-20 | PR #18 | green | release.yml |
+| T35 pwa | done 2026-11-20 | PR #18 | green | PWA |
 | T36 first-release | todo | | | First release |
 | T37 tmdb-proxy | todo | | | (optional) TMDB proxy |
 
 ## Open questions
 
-1. **GitHub Secrets Status:** Checked via `gh secret list --repo Ashrix404/cinetor-next`. All 6 requested secrets are present (`TMDB_TOKEN`, `RELEASE_REPO_TOKEN`, `ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`). None are missing. Needs confirmation if the TMDB token in GitHub Secrets has already been rotated from the one previously shared in chat.
+1. **(OPEN — user)** Rotate the TMDB token in the TMDB dashboard and update the `TMDB_TOKEN` secret. **GitHub Secrets Status:** Checked via `gh secret list --repo Ashrix404/cinetor-next`. All 6 requested secrets are present (`TMDB_TOKEN`, `RELEASE_REPO_TOKEN`, `ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`). None are missing. Needs confirmation if the TMDB token in GitHub Secrets has already been rotated from the one previously shared in chat.
 2. **Keystore file extension & format:** `docs/03-github-setup.md` mentions `cinetor.p12` / `cinetor.p12.b64` (openssl PKCS12), whereas the command block references `cinetor.jks.b64` and `release.yml` references `$RUNNER_TEMP/cinetor.jks` with `storeType "pkcs12"`. Java keystores support PKCS12 content inside `.jks` extension, but naming should be kept consistent to avoid confusion.
 3. **(ANSWERED in T02: splits work, 10 APKs)** **Multi-ABI splits without native libraries:** `docs/04-implementation-plan.md` T02 acceptance requires 5 phone APKs + 5 TV APKs (`universal`, `arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`). However, `docs/08-updates-and-release.md` line 61 notes that because there are no native `.so` files, AGP might only generate the universal APK. T02 will check if AGP generates ABI splits when no native libs are present.
 4. **(ANSWERED in T02: minSdk 24, compile/target 36)** **Android target / compile SDK:** `docs/02-architecture.md` specifies minSdk 26, compile/target SDK 37 for Capacitor 8. Real values must be verified from the generated `android/variables.gradle` during T02.
@@ -103,6 +103,15 @@
 - T08: `library.ts`, `series-settings.ts` (keyed by series; accepts `Show|s|e` keys), `pin.ts` (`pinHash` identical to prototype, plus the keypad flow `pinPress` = prototype `pinDone`).
 - T09: `player-model.ts` (reducers, `next`/`prev` cross seasons; real season sizes when known), `subtitles.ts` (`parseVtt`, `subtitleCss` = prototype `subCss`, `simulateGeneration` — labelled SIMULATED, loads hosted VTT, falls back to the bundled sample line).
 - T10: `sports.ts` (counts verified: All 18, Basketball 4, Cricket 9, Motorsports 2, WWE 2, Football 1, Upcoming 4), `live.ts`, `music.ts`.
+
+### T11–T35 — built 2026-11-20 by Claude Code (agy could not finish)
+- **Mobile (T11–T22)** `src/shells/mobile/`: CSS ported from the prototype (`app.css`, `glass.css`); Preact components per prototype function; one shared `<video>` moved between inline / fullscreen / PiP; downloads through `src/core/downloads/` (web engine: parallel Range fetch, ~6 connections per host; native engine in Java). Smoke test `tests/shells/mobile.smoke.test.tsx` renders every route with a mocked TMDB.
+- **Desktop (T23–T24)** `src/shells/desktop/` ported from the React+htm prototype; smoke test included.
+- **TV (T25–T29)** `src/shells/tv/` vanilla TS: 30-symbol SVG sprite, spatial nav (80 ms throttle), full key map (unit test), ≤ 8 rows × 12 posters + header See all, `<img loading=lazy>` with ±1 row windowing, one `<video>` reused and released, one 1 s ticker paused when hidden, TMDB cache in localStorage 30 min, 1.4 s splash. Bundle: JS 28 KB / CSS 3 KB gzip. Smoke test walks the views with key events and checks < 1500 DOM nodes.
+- **Native (T30–T33)** `android/app/src/main/java/com/mythbrix/cinetor/plugins/`: CinetorNativePlugin, Downloads (Range segments, downloads.json, reload as paused), FileSink (SAF / MediaStore / legacy), DownloadService (dataSync) + Notify, Updater (sha256 while streaming, delete on mismatch, FileProvider install, unknown-sources flow). Compiles in CI; **not yet tested on a device**.
+- **User decision 2026-11-20:** brightness/volume gestures only in the APK (window brightness + STREAM_MUSIC); removed from all browsers (docs/05 updated).
+- **Honest gaps / UNVERIFIED (need a real device):** background playback in the APK WebView (`keepAliveForPlayback` is a no-op until proven needed); web downloads after a reload restart from 0 ("Paused · restart needed") even with OPFS; UI parity was checked by smoke tests, not by eye — check the preview links on a phone/TV.
+- **T34/T35:** `release.yml` (tag `v*` → signed 5+5 APKs, `latest.json`, GitHub release in cinetor-releases, site on gh-pages with `keep_files`), `scripts/collect-release.mjs`, PWA (`web/manifest.webmanifest`, `web/sw.js`, PNG icons, iOS meta, SW update toast, version.json poll).
 
 ## Releases
 
