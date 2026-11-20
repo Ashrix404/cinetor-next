@@ -35,6 +35,17 @@ function InlinePlayer() {
   const fs = () => nav('player');
   const c = useStoreC(ctl);
   useEffect(showCtl, []);
+  // Rotating the phone to landscape opens the fullscreen player (only on a portrait → landscape change).
+  useEffect(() => {
+    let wasPortrait = innerHeight >= innerWidth;
+    const onR = () => {
+      const portrait = innerHeight >= innerWidth;
+      if (wasPortrait && !portrait && pl.get().active && !pl.get().pip) fs();
+      wasPortrait = portrait;
+    };
+    addEventListener('resize', onR);
+    return () => removeEventListener('resize', onR);
+  }, []);
   const down = (e: PointerEvent) => {
     if ((e.target as HTMLElement).closest('.pi,.ibtn,.sk,.big,.ptrk')) return;
     sw.current = { x: e.clientX, y: e.clientY };

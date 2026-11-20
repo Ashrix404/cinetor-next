@@ -22,11 +22,18 @@ export function HeroCarousel({ id, cards, top }: { id: string; cards: Card[]; to
   const n = cards.length;
   const [i, setI] = useState(() => Math.min(pos[id] || 0, Math.max(0, n - 1)));
   const [bg, setBg] = useState<[number, number, number]>([cards[i]?.hue ?? 0, cards[i]?.hue ?? 0, 0]);
-  const drag = useRef<{ x: number; moved: boolean } | null>(null);
-  const [dx, setDx] = useState(0);
+  const drag = useRef<{ x: number; y: number; moved: boolean; t: number } | null>(null);
+  const box = useRef<HTMLDivElement>(null);
   const dragged = useRef(false);
+  const fastT = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const go = (k: number) => {
+  const go = (k: number, fast = false) => {
+    const el = box.current;
+    if (el && fast) {
+      el.classList.add('fast');
+      clearTimeout(fastT.current);
+      fastT.current = setTimeout(() => el.classList.remove('fast'), 500);
+    }
     const ni = ((k % n) + n) % n;
     pos[id] = ni;
     setI(ni);
@@ -41,28 +48,33 @@ export function HeroCarousel({ id, cards, top }: { id: string; cards: Card[]; to
   }, [n, id]);
   if (!n) return null;
 
-  const down = (e: PointerEvent) => (drag.current = { x: e.clientX, moved: false });
+  // Drag writes straight to the DOM (no re-render per move) so the swipe follows the finger at 60 fps.
+  const down = (e: PointerEvent) => (drag.current = { x: e.clientX, y: e.clientY, moved: false, t: Date.now() });
   const move = (e: PointerEvent) => {
-    const d = drag.current;
-    if (!d) return;
+    const d = drag.current, el = box.current;
+    if (!d || !el) return;
     const x = e.clientX - d.x;
-    if (Math.abs(x) > 6) {
+    if (!d.moved && Math.abs(x) > 6 && Math.abs(x) > Math.abs(e.clientY - d.y)) {
       d.moved = true;
-      setDx(x * 0.9);
+      el.classList.add('drag');
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     }
+    if (d.moved) el.style.setProperty('--dx', x + 'px');
   };
   const up = (e: PointerEvent) => {
-    const d = drag.current;
+    const d = drag.current, el = box.current;
     drag.current = null;
-    if (!d || !d.moved) return;
-    const x = e.clientX - d.x;
-    setDx(0);
+    if (!d || !d.moved || !el) return;
+    const x = e.clientX - d.x, v = Math.abs(x) / Math.max(1, Date.now() - d.t);
+    el.classList.remove('drag');
+    el.style.setProperty('--dx', '0px');
     dragged.current = true;
     setTimeout(() => (dragged.current = false), 60);
-    if (Math.abs(x) > 36) go(i + (x < 0 ? 1 : -1));
+    if (Math.abs(x) > 36 || v > 0.35) go(i + (x < 0 ? 1 : -1), true);
+    else go(i, true);
   };
   return (
-    <div class={'hcar' + (dx ? ' drag' : '')} style={`--dx:${dx}px`} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
+    <div class="hcar" ref={box} style="--dx:0px" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
       <div class="hbg">
         <i class={bg[2] === 0 ? 'on' : ''} style={`--h:${bg[0]}`} />
         <i class={bg[2] === 1 ? 'on' : ''} style={`--h:${bg[1]}`} />

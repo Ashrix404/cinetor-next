@@ -1,26 +1,18 @@
-/* Liquid glass (html.lg), iOS-like: soft translucent fills, hairline borders, gentle top highlight.
-   Blur only on the fixed surfaces (nav, top banner, sheet, dialog, drawer, mini player); glow is static. */
+/* Liquid glass (html.lg), blended: same layout as the flat theme, no floating blocks or outlines.
+   Only a faint colour glow behind the page and real translucency (blur) on the fixed chrome. */
 html.lg .scr{isolation:isolate;background:#05060a}
-html.lg .scr::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(40% 30% at 18% 12%,rgba(110,140,255,.32),transparent 72%),radial-gradient(36% 28% at 86% 30%,rgba(255,110,190,.24),transparent 72%),radial-gradient(42% 34% at 34% 90%,rgba(50,230,200,.22),transparent 72%),radial-gradient(32% 26% at 82% 86%,rgba(255,190,90,.18),transparent 72%)}
+html.lg .scr::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(45% 32% at 18% 10%,rgba(110,140,255,.2),transparent 75%),radial-gradient(40% 30% at 88% 32%,rgba(255,110,190,.14),transparent 75%),radial-gradient(48% 36% at 30% 92%,rgba(50,230,200,.13),transparent 75%)}
 html.lg #app{background:#05060a}
-
-/* blurred chrome */
-html.lg .nav,html.lg .bbar,html.lg .sheet,html.lg .dialog,html.lg .dwr,html.lg .mini,html.lg .toast{-webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%)}
-html.lg .nav,html.lg .sheet,html.lg .dialog,html.lg .dwr,html.lg .mini{background:rgba(28,30,38,.55)!important;border:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07),inset 0 1px 0 rgba(255,255,255,.11),0 12px 32px rgba(0,0,0,.28)}
-html.lg .bbar{background:rgba(10,12,18,.42)!important;box-shadow:inset 0 -1px 0 rgba(255,255,255,.04)}
-html.lg .nav{margin:0 12px calc(10px + env(safe-area-inset-bottom));border-radius:30px;padding-bottom:10px!important}
-html.lg .nav .on i{background:rgba(255,255,255,.16);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
-html.lg .dwr{border-radius:0 30px 30px 0}
-html.lg .dscrim{background:rgba(0,0,0,.3)!important;border:0;box-shadow:none}
-
-/* buttons and cards: translucent, no hard outline */
-html.lg .menu-top,html.lg .card,html.lg .ibtn.glass,html.lg .bbar .ibtn,html.lg .ibtn.tonal,html.lg .hmy,html.lg .pk{background:rgba(255,255,255,.08)!important;border:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),inset 0 1px 0 rgba(255,255,255,.08)}
-html.lg .srow,html.lg .chip,html.lg .opts span,html.lg .field,html.lg .sts span,html.lg .mc,html.lg .ep,html.lg .banner,html.lg .tile,html.lg .pcard,html.lg .seg2,html.lg .seg,html.lg .spc .ring,html.lg .dsearch,html.lg .hchips span,html.lg .dlitem{background:rgba(255,255,255,.06)!important;border:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
-html.lg .card .srow,html.lg .card .pcard{background:transparent!important;box-shadow:none;border-radius:0}
-html.lg .card .srow+.srow{border-top:1px solid rgba(255,255,255,.04)}
-html.lg .opts span.on,html.lg .chip.sel{background:rgba(255,255,255,.88)!important;color:#111}
-html.lg .hc{border-color:rgba(255,255,255,.12);box-shadow:0 18px 40px rgba(0,0,0,.45)}
-html.lg .btn:not(.text):not(.tonal):not(.out){background:rgba(255,255,255,.92);color:#111;box-shadow:0 8px 22px rgba(0,0,0,.25)}
-html.lg .btn.tonal{background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}
-html.lg .sw{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.2)}html.lg .sw.on{background:#fff;border-color:#fff}
-html.lg .toast{background:rgba(240,240,245,.86)}
+html.lg #app.hasnav .nav,html.lg .bbar{background:rgba(8,9,14,.5)!important;-webkit-backdrop-filter:blur(26px) saturate(170%);backdrop-filter:blur(26px) saturate(170%);box-shadow:none;border:0}
+html.lg .sheet,html.lg .dialog,html.lg .dwr,html.lg .mini{background:rgba(24,26,34,.72)!important;-webkit-backdrop-filter:blur(28px) saturate(170%);backdrop-filter:blur(28px) saturate(170%);border:0;box-shadow:0 16px 40px rgba(0,0,0,.35)}
+html.lg .dscrim{background:rgba(0,0,0,.3)!important}
+html.lg .nav .on i{background:rgba(255,255,255,.14)}
+/* surfaces keep their flat shape, only lighter and see-through */
+html.lg .card,html.lg .menu-top,html.lg .dlitem,html.lg .dlsum{background:rgba(255,255,255,.045)!important;border:0;box-shadow:none}
+html.lg .srow,html.lg .chip,html.lg .opts span,html.lg .field,html.lg .sts span,html.lg .mc,html.lg .ep,html.lg .banner,html.lg .tile,html.lg .pcard,html.lg .seg2,html.lg .seg,html.lg .spc .ring,html.lg .hchips span,html.lg .ibtn.tonal,html.lg .hmy,html.lg .pk{background:rgba(255,255,255,.06)!important;border:0;box-shadow:none}
+html.lg .card .srow,html.lg .card .pcard{background:transparent!important;border-radius:0}
+html.lg .ibtn.glass,html.lg .bbar .ibtn{background:rgba(255,255,255,.08)!important;border:0;box-shadow:none}
+html.lg .opts span.on,html.lg .chip.sel{background:rgba(255,255,255,.9)!important;color:#111}
+html.lg .hc{border-color:rgba(255,255,255,.08)}
+html.lg .sw{background:rgba(255,255,255,.12)}html.lg .sw.on{background:#fff;border-color:#fff}
+html.lg .toast{background:rgba(240,240,245,.9)}

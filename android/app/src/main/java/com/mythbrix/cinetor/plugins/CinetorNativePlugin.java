@@ -231,6 +231,27 @@ public class CinetorNativePlugin extends Plugin {
         call.resolve();
     }
 
+    /** Deletes a saved download (MediaStore / SAF content uri or file uri). */
+    @PluginMethod
+    public void deleteFile(PluginCall call) {
+        String u = call.getString("uri");
+        boolean ok = false;
+        try {
+            if (u != null) {
+                Uri uri = Uri.parse(u);
+                if ("file".equals(uri.getScheme())) ok = new File(uri.getPath()).delete();
+                else {
+                    DocumentFile d = DocumentFile.fromSingleUri(getContext(), uri);
+                    ok = (d != null && d.delete()) || getContext().getContentResolver().delete(uri, null, null) > 0;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        JSObject r = new JSObject();
+        r.put("deleted", ok);
+        call.resolve(r);
+    }
+
     @PluginMethod
     public void dlList(PluginCall call) {
         JSObject r = new JSObject();

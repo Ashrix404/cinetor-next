@@ -6,6 +6,8 @@ import { I } from '../ui/icons';
 import { bg, CarTop, Empty, ErrorCard, hueOf, Loading, Opts, Poster, ratingOf, Row } from '../ui/common';
 import { useAsync } from '../ui/hooks';
 import { HeroCarousel, type Card } from './carousel';
+import { usePullRefresh } from '../ui/pull';
+import { clearTmdbCache } from '../../../core/tmdb';
 import { library, nav, on, opt, toast, ui } from '../state';
 
 const feeds = new Map<string, Feed>();
@@ -91,10 +93,12 @@ interface FeedPageP { section: Section; option?: string; options?: readonly stri
 function FeedPage({ section, option, options, optKey, kind, tag, banner }: FeedPageP) {
   const { data, error, loading, retry } = useFeed(section, option);
   const feed = data;
+  const ptr = usePullRefresh(() => (clearTmdbCache(), retry()));
   const cv = feed ? CatView({ section, feed, kind, tag }) : null;
   return (
-    <div class="scroll">
+    <div class="scroll" {...ptr.bind}>
       <CarTop />
+      {ptr.indicator}
       {options && optKey && <Opts k={optKey} list={[...options]} cur={option || options[0]} />}
       {feed && <HeroCarousel id={section + '-' + (option || '')} cards={feed.hero.map((t) => movieCard(t, section, kind))} />}
       {!feed && loading && <Loading />}

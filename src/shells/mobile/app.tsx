@@ -25,6 +25,18 @@ export function App() {
   const S = screens[route.name] || screens.home;
   const def = S as FunctionComponent & { land?: boolean; bare?: boolean; tab?: string | null };
   useEffect(() => applyTheme(theme.get().seed), [theme.get().seed]);
+  // --navh = real height of the bottom nav (+ its margin) so bars above it never overlap it.
+  useEffect(() => {
+    const app = document.getElementById('app');
+    const nav = app?.querySelector<HTMLElement>('.nav');
+    if (!app || !nav || typeof ResizeObserver === 'undefined') return;
+    const upd = () => app.style.setProperty('--navh', innerHeight - nav.getBoundingClientRect().top + 'px');
+    const ro = new ResizeObserver(upd);
+    ro.observe(nav);
+    addEventListener('resize', upd);
+    upd();
+    return () => (ro.disconnect(), removeEventListener('resize', upd));
+  }, [def.bare, on.get().lg]);
   useEffect(() => void document.documentElement.classList.toggle('lg', !!on.get().lg), [on.get().lg]);
   const root = router.stack()[0].name;
   const tab = def.tab !== undefined ? def.tab : TABS.includes(root) ? root : null;
