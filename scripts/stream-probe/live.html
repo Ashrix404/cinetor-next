@@ -1,0 +1,31 @@
+<!doctype html><meta charset="utf-8">
+<video id="v" muted playsinline></video>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.7.4/dist/hls.light.min.js"></script>
+<script>
+// via=direct: hls.js straight to the stream; via=proxy: every request through the gateway /v1/proxy
+const q = new URLSearchParams(location.search), u = q.get('u'), via = q.get('via');
+const GW = 'https://cinetor-api.sofasraful.workers.dev/v1/proxy?url=';
+const v = document.getElementById('v');
+window.__probe = { done: false, result: '' };
+const finish = (r) => { if (!window.__probe.done) window.__probe = { done: true, result: r }; };
+setTimeout(() => finish('no-progress readyState=' + v.readyState), 20000);
+v.addEventListener('timeupdate', () => v.currentTime > 1 && finish('PLAYING t=' + v.currentTime.toFixed(1)));
+if (via === 'native') {
+  v.src = u; v.play().catch((e) => finish('native-reject ' + e.name));
+  v.addEventListener('error', () => finish('native-error ' + (v.error && v.error.code)));
+} else {
+  const Base = Hls.DefaultConfig.loader;
+  class ProxyLoader extends Base {
+    load(ctx, cfg, cb) {
+      const orig = ctx.url;
+      ctx.url = GW + encodeURIComponent(orig) + '&referer=' + encodeURIComponent(new URL(orig).origin + '/') + '&_=' + Date.now();
+      const ok = cb.onSuccess;
+      cb.onSuccess = (res, st, c, n) => { res.url = orig; c.url = orig; ok(res, st, c, n); };
+      super.load(ctx, cfg, cb);
+    }
+  }
+  const h = new Hls(via === 'proxy' ? { loader: ProxyLoader } : {});
+  h.on(Hls.Events.ERROR, (e, d) => d.fatal && finish('FATAL ' + d.type + ' ' + d.details + ' ' + (d.response ? d.response.code : '')));
+  h.loadSource(u); h.attachMedia(v); v.play().catch(() => {});
+}
+</script>
