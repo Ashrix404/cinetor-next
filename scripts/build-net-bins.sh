@@ -10,7 +10,12 @@ USQUE_REV=6aa03fc97d12848dce34eedbd187fb1077b5d1ea    # v4.2.1
 OUT="$PWD/android/app/src/main/jniLibs"
 WORK="${RUNNER_TEMP:-/tmp}/netbins"
 NDK="$ANDROID_HOME/ndk/$NDK_VER"
-[ -d "$NDK" ] || yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$NDK_VER" >/dev/null
+if [ ! -d "$NDK" ]; then
+  set +o pipefail
+  yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$NDK_VER" >/dev/null
+  set -o pipefail
+fi
+[ -d "$NDK" ] || { echo "NDK $NDK_VER not installed"; exit 1; }
 TC="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
 mkdir -p "$WORK"
 fetch() { # repo rev dir
