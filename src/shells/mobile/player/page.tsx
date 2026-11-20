@@ -7,6 +7,7 @@ import { ctl, onPlayerTap, patch, pl, showCtl, startLive } from './store';
 import { useStore } from '../ui/hooks';
 import { Vcore } from './controls';
 import { PlayerSheet } from './sheets';
+import { createGestures, flashGest } from './gestures';
 import { level, readLevels, resetBrightness, setBrightness, setVolume } from './media-ctl';
 
 async function enterFs() {
@@ -39,9 +40,7 @@ async function exitFs() {
 
 export function PlayerPage() {
   const live = param<boolean>('live');
-  const [pill, setPill] = useState<{ ic: string; v: number } | null>(null);
   const [portrait, setPortrait] = useState(innerHeight > innerWidth);
-  const g = useRef<{ x: number; y: number; side: 'l' | 'r'; start: number; moved?: boolean } | null>(null);
   const c = useStore(ctl);
   useEffect(() => {
     if (live && !pl.get().active) startLive(param<string>('label') || 'Live', param<number>('hue') || 200);
@@ -60,34 +59,27 @@ export function PlayerPage() {
       if (pl.get().live && !pl.get().pip) pl.set({ active: false });
     };
   }, []);
-  // Brightness / volume gestures exist only in the APK (real system values); browsers get none.
+  // Slide = seek and long hold = 2× everywhere; brightness / volume (vertical) exist only in the APK.
   const gestures = isNative();
-  const down = (e: PointerEvent) => {
-    if (!gestures) return;
-    if ((e.target as HTMLElement).closest('.pi,.ibtn,.sk,.big,.ptrk,.sheet,.scrim')) return;
-    const side = e.clientX < innerWidth / 2 ? 'l' : 'r';
-    g.current = { x: e.clientX, y: e.clientY, side, start: side === 'l' ? level.b : level.v };
-  };
-  const move = (e: PointerEvent) => {
-    const d = g.current;
-    if (!d || pl.get().st.locked) return;
-    const dy = d.y - e.clientY;
-    if (Math.abs(dy) < 10 || Math.abs(dy) < Math.abs(e.clientX - d.x)) return;
-    d.moved = true;
-    const v = Math.max(0, Math.min(1, d.start + dy / (innerHeight * 0.8)));
-    if (d.side === 'l') setBrightness(v);
-    else setVolume(v);
-    setPill({ ic: d.side === 'l' ? 'white-balance-sunny' : 'volume-high', v });
-  };
-  const up = () => {
-    setTimeout(() => (g.current = null), 0);
-    setTimeout(() => setPill(null), 600);
-  };
+  const gs = useRef(
+    createGestures({
+      move(d, e) {
+        if (!gestures) return;
+        if (d.side === undefined) {
+          d.side = d.x < innerWidth / 2 ? 'l' : 'r';
+          d.start = d.side === 'l' ? level.b : level.v;
+        }
+        const v = Math.max(0, Math.min(1, (d.start ?? 0) + (d.y - e.clientY) / (innerHeight * 0.8)));
+        if (d.side === 'l') setBrightness(v);
+        else setVolume(v);
+        flashGest(d.side === 'l' ? 'white-balance-sunny' : 'volume-high', Math.round(v * 100) + '%', '', 600);
+      },
+    }),
+  ).current;
   if (!pl.get().active) return null;
   return (
-    <div class={'plbox' + (c.hidden ? ' ctlhide' : '')} style="position:absolute;inset:0;background:#000;touch-action:none" onClick={(e) => !g.current?.moved && onPlayerTap(e)} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
+    <div class={'plbox' + (c.hidden ? ' ctlhide' : '')} style="position:absolute;inset:0;background:#000;touch-action:none" onClick={(e) => !gs.suppressed() && onPlayerTap(e)} onPointerDown={gs.down} onPointerMove={gs.move} onPointerUp={gs.up} onPointerCancel={gs.up}>
       <Vcore land onFs={() => {}} />
-      {pill && <div class="lvl"><I n={pill.ic} />{Math.round(pill.v * 100)}%</div>}
       {isIOS() && !isNative() && portrait && <div class="rotate"><div><I n="phone-rotate-landscape" /><div>Rotate your phone</div></div></div>}
       <PlayerSheet land />
     </div>

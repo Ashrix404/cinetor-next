@@ -5,7 +5,8 @@ import { I, SV } from '../ui/icons';
 import { useStore } from '../ui/hooks';
 import { fmtTime, SPEEDS, cycleFit } from '../../../core/player-model';
 import { back, setUi } from '../state';
-import { next, patch, pl, ptime, seekBy, seekFrac, setSpeed, showCtl, stop, togglePlay, toPip } from './store';
+import { next, nextServer, patch, pl, ptime, retryPlay, seekBy, seekFrac, setSpeed, showCtl, stop, togglePlay, toPip } from './store';
+import { gest } from './gestures';
 import { VideoHost } from './video-host';
 import { SubOverlay } from './subs-overlay';
 import { GenPill } from './subs';
@@ -50,6 +51,27 @@ function Seek({ land, onFs }: { land: boolean; onFs: () => void }) {
   );
 }
 
+function GestPill() {
+  const g = useStore(gest);
+  if (!g.show) return null;
+  return <div class="lvl gp"><I n={g.icon} /><b>{g.text}</b>{g.sub && <small>{g.sub}</small>}</div>;
+}
+/** Shown instead of a black screen when nothing could be played. */
+function PlayErr() {
+  const s = useStore(pl);
+  if (!s.err) return null;
+  return (
+    <div class="vg-err" onClick={(e) => e.stopPropagation()}>
+      <I n="alert-circle-outline" />
+      <span>{s.err}</span>
+      <div>
+        <b role="button" onClick={retryPlay}><I n="refresh" /> Retry</b>
+        {s.servers.length > 1 && <b role="button" onClick={nextServer}><I n="server" /> Other server</b>}
+      </div>
+    </div>
+  );
+}
+
 export function Vcore({ land, onFs }: { land: boolean; onFs: () => void }) {
   const s = useStore(pl), p = s.st;
   const isSer = !s.live && p.mediaType === 'tv';
@@ -61,6 +83,7 @@ export function Vcore({ land, onFs }: { land: boolean; onFs: () => void }) {
         <div class="pl vg-top" style="pointer-events:auto;z-index:10;background:linear-gradient(rgba(0,0,0,0.8),transparent);">
           <span class="vg-back" role="button" aria-label="Back" onClick={act(land ? back : stop)}><I n="arrow-left" /></span>
           <div class="vg-title"><b>{s.live ? s.label : p.title}</b>{isSer && <small>S{p.season} · E{p.episode}</small>}</div>
+          {s.servers.length > 1 && <span class="vg-srv" role="button" aria-label="Switch server" onClick={act(nextServer)}><I n="server" /> {s.servers[s.srv]?.name.replace(/\s*\(.*\)/, '') || 'Server'} · {s.srv + 1}/{s.servers.length}</span>}
           <span class="vg-fs" role="button" aria-label={land ? 'Exit fullscreen' : 'Fullscreen'} onClick={act(land ? back : onFs)}>
             <I n={land ? 'fullscreen-exit' : 'fullscreen'} />
           </span>
@@ -77,6 +100,8 @@ export function Vcore({ land, onFs }: { land: boolean; onFs: () => void }) {
       {p.bgPlay && <div class="bgmark"><I n="headphones" /></div>}
       <SubOverlay mode={land ? 'l' : 'p'} />
       <GenPill />
+      <GestPill />
+      <PlayErr />
     </>
   );
   if (p.locked) return <>{base}<div class="pl vg-top vg-lockonly">{lock}</div></>;

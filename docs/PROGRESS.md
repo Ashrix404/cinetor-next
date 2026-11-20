@@ -118,6 +118,13 @@
 - **Network modes (vega-app parity):** WARP mode (usque http-proxy, one-time `usque register -a`), AntiDPI mode (ByeDPI SOCKS5 + the 4 vega presets + custom args), DNS over HTTPS (Cloudflare, Google, AdGuard, Custom, Off; RFC 8484). All app traffic goes through a local Java proxy (`NetProxy`): WebView via `androidx.webkit.ProxyController`, native downloads/updater via `java.net.Proxy`. Web/desktop show the honest note that browsers cannot do this. TV: OK toggles WARP/AntiDPI and cycles DoH providers (Custom needs typing, so not on TV).
 - **UNVERIFIED (device test needed):** WARP registration and tunnel on real networks; WebView PROXY_OVERRIDE needs a recent Android System WebView (old TVs: only native traffic uses the mode); `_capacitor_content_` range playback of MediaStore files.
 
+### U02 player/streams round — 2026-11-20 (Claude Code)
+- **Root cause of black player:** gateway `sources[].url` are embed *pages* (`isDirect:false`, mislabeled `hls`); the app put them into `<video src>`. `parseResolve` now only plays real media (`.m3u8/.mp4/...`) in `<video>`; every embed goes to a server list (`pl.servers`) with a Server switcher, "Taking long? Try another server", Retry and an error card (never a black screen). Resolve timeout 12 s ×2.
+- Gestures (`player/gestures.ts`, portrait + landscape): single tap toggles controls immediately (double-tap removed); slide left/right seeks (preview pill, commit on release); long hold = 2× (restored on release); brightness/volume vertical drags stay APK-only.
+- Glass: floating rounded nav/top bar/sheets; `.scr` no longer isolates (it hid the download sheet footer under the nav). Download sheet always above nav, footer un-clipped.
+- Splash: native launch screen now the same #050506 (no image) + in-app splash border removed = one continuous splash.
+- **UNVERIFIED (device):** embed servers inside the APK WebView; 2× / seek feel on a real phone.
+
 ## Releases
 
 | Version | Date | Notes |
